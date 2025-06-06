@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  image            String?
+  currentPosition  String?
+  skills           Skill[]
+  location         String?
+  bio              String?
+  careerGoals      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  profiles         Profile[]
+  userassessments      UserAssessment[]
+  careerPlans      CareerPlan[]
+  learningProgress LearningProgress[]
+  ownerassessments      Assessment[]
+  interviews       Interview[]
+  documents        Document[]
+  applications     JobApplication[]
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  company      String?
+  startDate    DateTime
+  endDate      DateTime?
+  description  String?
+  achievements String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  level       Int
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Assessment {
+  id              String   @id @default(cuid())
+  ownerId          String
+  owner            User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  type            String   // Technical, Soft Skills, Industry Knowledge, Role-specific
+  passingScore           Float?
+  timeLimit        Int? @default(60)
+  attempts        Int      @default(1)
+  completedAt     DateTime?
+  questions       AssessmentQuestion[]
+  userAssessments UserAssessment[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssessmentQuestion {
+  id           String   @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question     String
+  answer       String?
+  correctAnswer String?
+  score        Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model UserAssessment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  score        Float?
+  attempts     Int      @default(1)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+model CareerPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  targetRole  String?
+  milestones  Milestone[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  careerPlanId String
+  careerPlan  CareerPlan @relation(fields: [careerPlanId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  deadline    DateTime?
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Course {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  category        String
+  content         String?
+  durationMinutes Int?
+  learningProgress LearningProgress[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LearningProgress {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completionPercentage Float    @default(0)
+  lastAccessed     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Interview {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleTitle     String
+  questions     InterviewQuestion[]
+  feedback      String?
+  recordingUrl  String?
+  score         Float?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model InterviewQuestion {
+  id          String   @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  question    String
+  answer      String?
+  feedback    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // Resume, Cover Letter, Portfolio
+  title     String
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Job {
+  id             String   @id @default(cuid())
+  title          String
+  company        String
+  location       String?
+  description    String?
+  requirements   String?
+  salary         String?
+  applications   JobApplication[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model JobApplication {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId        String
+  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status       String   // Applied, Interview, Offer, Rejected
+  appliedDate  DateTime @default(now())
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
