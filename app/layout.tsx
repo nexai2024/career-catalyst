@@ -1,9 +1,12 @@
 import './globals.css';
+import { StackProvider, StackTheme } from "@stackframe/stack";
+import { stackServerApp } from "../stack";
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
-import { NavBar } from '@/components/navbar';
+import  NavBar from '@/components/navbar';
+import { Suspense } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,13 +28,19 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
+          <StackProvider app={stackServerApp}>
+          <StackTheme>
           <div className="min-h-screen flex flex-col">
-            
+            <Suspense fallback={<div>=Loading...</div>}>
+          <NavBar />
+            </Suspense>
             <main className="flex-1">
               {children}
             </main>
             <Toaster />
           </div>
+          </StackTheme>
+          </StackProvider>
         </ThemeProvider>
       </body>
     </html>

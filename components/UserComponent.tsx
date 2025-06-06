@@ -1,20 +1,17 @@
+"use client"
 import { LogOut, LogIn } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { redirect } from "next/navigation";
+import { UserButton, useUser } from "@stackframe/stack";
 
-export default async function UserComponent() {
-    let isLoggedIn = false
-
-
+export default function UserComponent() {
+  const user = useUser({ or: "redirect" });
     // DISPLAY LOGGED IN USER WITH LINK TO LOGOUT OR LOGIN LINK IF NO USER
     return (
-        isLoggedIn ? (
+        user ? (
             <div className="px-2 mt-4">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
+            <UserButton />
           </div>
         ) : (
             <div className="px-2 mt-4">
