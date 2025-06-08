@@ -31,7 +31,7 @@ import {
   PlusCircle
 } from "lucide-react";
 
-export const profileFormSchema = z.object({
+const profileFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
@@ -52,7 +52,7 @@ export const profileFormSchema = z.object({
   }),
 });
 
-export const experienceFormSchema = z.object({
+const experienceFormSchema = z.object({
   title: z.string().min(2, {
     message: "Job title must be at least 2 characters.",
   }),
@@ -70,7 +70,7 @@ export const experienceFormSchema = z.object({
   }),
 });
 
-export const skillFormSchema = z.object({
+ const skillFormSchema = z.object({
   name: z.string().min(2, {
     message: "Skill name must be at least 2 characters.",
   }),
