@@ -31,7 +31,7 @@ import {
   PlusCircle
 } from "lucide-react";
 
-const profileFormSchema = z.object({
+export const profileFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
@@ -52,7 +52,7 @@ const profileFormSchema = z.object({
   }),
 });
 
-const experienceFormSchema = z.object({
+export const experienceFormSchema = z.object({
   title: z.string().min(2, {
     message: "Job title must be at least 2 characters.",
   }),
@@ -70,7 +70,7 @@ const experienceFormSchema = z.object({
   }),
 });
 
-const skillFormSchema = z.object({
+export const skillFormSchema = z.object({
   name: z.string().min(2, {
     message: "Skill name must be at least 2 characters.",
   }),
@@ -155,7 +155,7 @@ export default function ProfilePage() {
     },
   });
 
-  const skillForm = useForm<z.infer<typeof skillFormSchema>>({
+   const skillForm = useForm<z.infer<typeof skillFormSchema>>({
     resolver: zodResolver(skillFormSchema),
     defaultValues: {
       name: "",
@@ -168,11 +168,11 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       // In a real app, you would submit to an API here
-      console.log(values);
+      console.log("Values for Profile submit", values);
       
       toast({
         title: "Profile updated",
-        description: "Your profile information has been updated successfully.",
+        description: "Your profile information has not been updated successfully.",
       });
     } catch (error) {
       toast({

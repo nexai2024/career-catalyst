@@ -168,7 +168,7 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       // In a real app, you would submit to an API here
-      console.log(values);
+      console.log("Values for Profile submit", values);
       
       toast({
         title: "Profile updated",

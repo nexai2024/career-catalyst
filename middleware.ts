@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { useUser } from "@stackframe/stack";
+import { stackServerApp } from "@/stack";
 import { prisma } from './lib/db';
 
 export async function middleware(request: NextRequest) {
-  const user = useUser();
+  const user = await stackServerApp.getUser(); 
   // Public routes that don't require authentication
   const publicRoutes = [
     '/',
