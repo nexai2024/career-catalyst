@@ -64,22 +64,6 @@ export default function TakeAssessmentPage({ params }: { params: Params }) {
     fetchAssessment();
   }, [id, toast]);
 
-  useEffect(() => {
-    if (timeRemaining === null || timeRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev === null || prev <= 0) {
-          clearInterval(timer);
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeRemaining]);
 
   const handleResponseChange = (questionId: string, value: string) => {
     setResponses((prev) => ({
@@ -142,6 +126,22 @@ export default function TakeAssessmentPage({ params }: { params: Params }) {
       </div>
     );
   }
+  useEffect(() => {
+    if (timeRemaining === null || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev === null || prev <= 0) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeRemaining, handleSubmit]);
 
   const questions = assessment.assessment_questions;
   const currentQuestion = questions[currentQuestionIndex].question;
