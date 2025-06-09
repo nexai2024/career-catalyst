@@ -63,15 +63,6 @@ export default function TakeAssessmentPage({ params }: { params: Params }) {
 
     fetchAssessment();
   }, [id, toast]);
-
-
-  const handleResponseChange = (questionId: string, value: string) => {
-    setResponses((prev) => ({
-      ...prev,
-      [questionId]: value,
-    }));
-  };
-
   const handleSubmit = async () => {
     if (!attemptId) return;
 
@@ -112,20 +103,6 @@ export default function TakeAssessmentPage({ params }: { params: Params }) {
       setSubmitting(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-4 md:p-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
   useEffect(() => {
     if (timeRemaining === null || timeRemaining <= 0) return;
 
@@ -142,6 +119,30 @@ export default function TakeAssessmentPage({ params }: { params: Params }) {
 
     return () => clearInterval(timer);
   }, [timeRemaining, handleSubmit]);
+
+  const handleResponseChange = (questionId: string, value: string) => {
+    setResponses((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }));
+  };
+
+
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 md:p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
 
   const questions = assessment.assessment_questions;
   const currentQuestion = questions[currentQuestionIndex].question;

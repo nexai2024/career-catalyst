@@ -29,14 +29,14 @@ export async function middleware(request: NextRequest) {
   // If user exists, check if profile is completed
   if (user && !isPublicRoute) {
     // Check if user has completed their profile using Prisma
-    const profile = await prisma.user_profiles.findUnique({
-      where: { user_id: user.id },
-      select: { completed_at: true },
+    const profile = await prisma.profile.findFirst({
+      where: { userId: user.id },
+      select: { completedAt: true },
     });
 
     // If no profile or not completed, redirect to onboarding
     // Exception: allow access to the onboarding page itself
-    if ((!profile || !profile.completed_at) && 
+    if ((!profile || !profile.completedAt) && 
         !request.nextUrl.pathname.startsWith('/profile/onboarding') &&
         !request.nextUrl.pathname.startsWith('/api/profile/complete')) {
       const url = request.nextUrl.clone()
@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // If profile is completed but trying to access onboarding, redirect to dashboard
-    if (profile?.completed_at && request.nextUrl.pathname.startsWith('/profile/onboarding')) {
+    if (profile?.completedAt && request.nextUrl.pathname.startsWith('/profile/onboarding')) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
