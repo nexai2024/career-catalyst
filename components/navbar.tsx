@@ -193,9 +193,9 @@ function NavBar() {
                         {/* Desktop navigation */}
                         <div className="hidden md:block">
                           <div className="flex items-center space-x-6">
-                            {anonRoutes.map((route) => (
+                            {anonRoutes.map((route,index) => (
                               <Link
-                                key={route.path}
+                                key={index}
                                 href={route.path}
                                 className={cn(
                                   "flex items-center text-sm font-medium transition-colors hover:text-primary",

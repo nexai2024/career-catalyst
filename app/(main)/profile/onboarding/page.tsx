@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,6 +30,8 @@ import {
   CheckCircle, 
   PlusCircle
 } from "lucide-react";
+import { UserContext } from "@/contexts/User";
+
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -83,17 +85,17 @@ const experienceFormSchema = z.object({
 export default function ProfilePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { user } = useContext(UserContext);
   // Mock user data
-  const user = {
-    name: "Alex Johnson",
-    email: "alex.johnson@example.com",
-    currentPosition: "Senior Software Engineer",
-    location: "San Francisco, CA",
-    bio: "Experienced software engineer with a passion for building scalable web applications. Specialized in React, TypeScript, and Node.js.",
-    careerGoals: "Looking to transition into a technical leadership role where I can mentor junior developers while continuing to build innovative solutions.",
-    image: "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=600",
-  };
+  // const user = {
+  //   name: "Alex Johnson",
+  //   email: "alex.johnson@example.com",
+  //   currentPosition: "Senior Software Engineer",
+  //   location: "San Francisco, CA",
+  //   bio: "Experienced software engineer with a passion for building scalable web applications. Specialized in React, TypeScript, and Node.js.",
+  //   careerGoals: "Looking to transition into a technical leadership role where I can mentor junior developers while continuing to build innovative solutions.",
+  //   image: "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=600",
+  // };
 
   // Mock experiences
   const experiences = [
@@ -133,12 +135,12 @@ export default function ProfilePage() {
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: user.name,
-      email: user.email,
-      currentPosition: user.currentPosition,
-      location: user.location,
-      bio: user.bio,
-      careerGoals: user.careerGoals,
+      name: user?.name,
+      email: user?.email,
+      currentPosition: user?.currentPosition,
+      location: user?.location,
+      bio: user?.bio,
+      careerGoals: user?.careerGoals,
     },
   });
 
@@ -165,16 +167,28 @@ export default function ProfilePage() {
   });
 
   async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
+    console.log("Profile form values", values);
+    console.log("User context", user);
     setIsLoading(true);
+    
     try {
-      // In a real app, you would submit to an API here
-      console.log("Values for Profile submit", values);
+      const response = await fetch("/api/user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+      
+      const data = await response.json();
+      console.log("Profile updated successfully:", data);
       
       toast({
         title: "Profile updated",
-        description: "Your profile information has not been updated successfully.",
+        description: "Your profile information has been updated successfully.",
       });
     } catch (error) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
@@ -258,21 +272,21 @@ export default function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-32 w-32">
-                <AvatarImage src={user.image} alt={user.name} />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={user?.image} alt={user?.name} />
+                <AvatarFallback>{user?.name}</AvatarFallback>
               </Avatar>
               <div className="text-center">
-                <h2 className="text-2xl font-bold">{user.name}</h2>
-                <p className="text-muted-foreground">{user.currentPosition}</p>
+                <h2 className="text-2xl font-bold">{user?.name}</h2>
+                <p className="text-muted-foreground">{user?.currentPosition}</p>
               </div>
               <div className="w-full space-y-3 pt-4">
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">{user.location}</span>
+                  <span className="text-sm">{user?.location}</span>
                 </div>
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">{user.email}</span>
+                  <span className="text-sm">{user?.email}</span>
                 </div>
                 <div className="flex items-center">
                   <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />

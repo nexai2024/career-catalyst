@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import { useUser } from "@stackframe/stack";
-
+import { prisma } from "@/lib/db";
+import { UserContext } from "@/contexts/User";
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = useUser();
+  const user = useContext(UserContext);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [profileCompleted, setProfileCompleted] = useState(false);
-
+  const axios = require('axios');
   useEffect(() => {
     const checkProfileCompletion = async () => {
       if (!user) {
@@ -23,14 +22,27 @@ export default function DashboardLayout({
       }
 
       try {
-        const supabase = createClient();
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('completed_at')
-          .eq('user_id', user.id)
-          .single();
-
-        if (!profile || !profile.completed_at) {
+        console.log('Checking profile for user:', user.user?.id);
+       // const fetchUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/profile`;
+        const profile = await axios.get('/api/profile/complete')
+          .then(function (response: any) {
+            console.log('Profile data:', response.data);
+            return response.data.profile;
+          })
+          .catch(function (error: Error) {
+            console.error('Error fetching profile:', error);
+            return null;
+          })
+        
+        if (!profile) {
+          console.error('Profile not found for user:', user.user?.id);
+          router.push('/profile/onboarding');
+          return;
+        }
+console.log('Profile fetched:', profile);
+        if (!profile || !profile.completedAt) {
+          console.log('Profile not completed for user:', user.user?.id);
+        alert('Please complete your profile');
           router.push('/profile/onboarding');
           return;
         }

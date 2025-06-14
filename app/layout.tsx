@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import  NavBar from '@/components/navbar';
 import { Suspense } from 'react';
-
+import UserProvider from '@/contexts/User';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -21,28 +21,35 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+  <StackProvider app={stackServerApp}>
+     
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      
+      <body className={inter.className}><Suspense fallback={<div>=Loading...</div>}>
+    <UserProvider>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
         >
-          <StackProvider app={stackServerApp}>
+          
           <StackTheme>
           <div className="min-h-screen flex flex-col">
-            <Suspense fallback={<div>=Loading...</div>}>
+           
           <NavBar />
-            </Suspense>
             <main className="flex-1">
               {children}
             </main>
             <Toaster />
           </div>
           </StackTheme>
-          </StackProvider>
-        </ThemeProvider>
-      </body>
+        
+        </ThemeProvider></UserProvider>
+    </Suspense>
+      </body> 
+      
     </html>
+   
+    </StackProvider>
   );
 }
