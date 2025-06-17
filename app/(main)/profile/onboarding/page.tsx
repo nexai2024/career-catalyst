@@ -1,7 +1,6 @@
 "use client";
 
 import { useContext, useState } from "react";
-import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -27,11 +26,11 @@ import {
   Briefcase, 
   MapPin, 
   Award, 
-  CheckCircle, 
-  PlusCircle
+  CheckCircle
 } from "lucide-react";
 import { UserContext } from "@/contexts/User";
-
+const axios = require('axios');
+// Define the form schemas using Zod
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -55,6 +54,8 @@ const profileFormSchema = z.object({
 });
 
 const experienceFormSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
   title: z.string().min(2, {
     message: "Job title must be at least 2 characters.",
   }),
@@ -86,6 +87,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useContext(UserContext);
+  
   // Mock user data
   // const user = {
   //   name: "Alex Johnson",
@@ -98,39 +100,39 @@ export default function ProfilePage() {
   // };
 
   // Mock experiences
-  const experiences = [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      company: "TechCorp Inc.",
-      startDate: "2021-06",
-      current: true,
-      description: "Lead developer for the company's main product, responsible for architecture decisions and implementation of new features.",
-      achievements: "Improved application performance by 40% through code optimization and introduced CI/CD pipelines."
-    },
-    {
-      id: 2,
-      title: "Software Engineer",
-      company: "WebSolutions LLC",
-      startDate: "2018-03",
-      endDate: "2021-05",
-      current: false,
-      description: "Developed and maintained client-facing web applications using React and Node.js.",
-      achievements: "Successfully delivered 12 projects on time and under budget."
-    },
-  ];
+  // const experiences = [
+  //   {
+  //     id: 1,
+  //     title: "Senior Software Engineer",
+  //     company: "TechCorp Inc.",
+  //     startDate: "2021-06",
+  //     current: true,
+  //     description: "Lead developer for the company's main product, responsible for architecture decisions and implementation of new features.",
+  //     achievements: "Improved application performance by 40% through code optimization and introduced CI/CD pipelines."
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Software Engineer",
+  //     company: "WebSolutions LLC",
+  //     startDate: "2018-03",
+  //     endDate: "2021-05",
+  //     current: false,
+  //     description: "Developed and maintained client-facing web applications using React and Node.js.",
+  //     achievements: "Successfully delivered 12 projects on time and under budget."
+  //   },
+  // ];
 
   // Mock skills
-  const skills = [
-    { id: 1, name: "JavaScript", category: "Programming", level: 5 },
-    { id: 2, name: "React", category: "Frontend", level: 5 },
-    { id: 3, name: "Node.js", category: "Backend", level: 4 },
-    { id: 4, name: "TypeScript", category: "Programming", level: 4 },
-    { id: 5, name: "GraphQL", category: "API", level: 3 },
-    { id: 6, name: "AWS", category: "Cloud", level: 3 },
-    { id: 7, name: "Docker", category: "DevOps", level: 3 },
-    { id: 8, name: "PostgreSQL", category: "Database", level: 4 },
-  ];
+  // const skills = [
+  //   { id: 1, name: "JavaScript", category: "Programming", level: 5 },
+  //   { id: 2, name: "React", category: "Frontend", level: 5 },
+  //   { id: 3, name: "Node.js", category: "Backend", level: 4 },
+  //   { id: 4, name: "TypeScript", category: "Programming", level: 4 },
+  //   { id: 5, name: "GraphQL", category: "API", level: 3 },
+  //   { id: 6, name: "AWS", category: "Cloud", level: 3 },
+  //   { id: 7, name: "Docker", category: "DevOps", level: 3 },
+  //   { id: 8, name: "PostgreSQL", category: "Database", level: 4 },
+  // ];
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -147,6 +149,8 @@ export default function ProfilePage() {
   const experienceForm = useForm<z.infer<typeof experienceFormSchema>>({
     resolver: zodResolver(experienceFormSchema),
     defaultValues: {
+      id: "",
+      userId: "",
       title: "",
       company: "",
       startDate: "",
@@ -166,19 +170,21 @@ export default function ProfilePage() {
     },
   });
 
-  async function onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
+  async function  onProfileSubmit(values: z.infer<typeof profileFormSchema>) {
     console.log("Profile form values", values);
     console.log("User context", user);
     setIsLoading(true);
     
     try {
-      const response = await fetch("/api/user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
+      const response = await axios.post('/api/user', {
+        name: values.name,
+        email: values.email,
+        currentPosition: values.currentPosition,
+        location: values.location,
+        bio: values.bio,
+        careerGoals: values.careerGoals,
       });
+
       
       const data = await response.json();
       console.log("Profile updated successfully:", data);
@@ -204,7 +210,17 @@ export default function ProfilePage() {
     try {
       // In a real app, you would submit to an API here
       console.log(values);
-      
+      const response = await axios.post('/api/user/experience', {
+        userId: user?.id,
+        role: values.title,
+        company: values.company,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        //current: values.current,
+        description: values.description,
+        achievements: values.achievements,
+      });
+      console.log("Experience added successfully:", response.data);
       toast({
         title: "Experience added",
         description: "Your experience has been added to your profile.",
@@ -235,7 +251,13 @@ export default function ProfilePage() {
     try {
       // In a real app, you would submit to an API here
       console.log(values);
-      
+      const response = await axios.post('/api/user/skills', {
+        userId: user?.id,
+        name: values.name,
+        category: values.category,
+        level: values.level,
+      });
+      console.log("Skill added successfully:", response.data);
       toast({
         title: "Skill added",
         description: "Your skill has been added to your profile.",
@@ -290,11 +312,11 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center">
                   <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">{experiences.length} work experiences</span>
+                  <span className="text-sm">{user?.yearsOfExperience} work experiences</span>
                 </div>
                 <div className="flex items-center">
                   <Award className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">{skills.length} skills</span>
+                  <span className="text-sm">{user?.skills?.length} skills</span>
                 </div>
               </div>
               <Button className="w-full mt-4">
@@ -333,7 +355,7 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>Full Name</FormLabel>
                               <FormControl>
-                                <Input placeholder="John Doe" {...field} />
+                                <Input placeholder="John Doe"  {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -438,23 +460,28 @@ export default function ProfilePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {experiences.map((exp) => (
+                  {!user?.experiences || user?.experiences.length === 0 ? (
+                    <div className="text-center text-muted-foreground">
+                      <p>No work experience added yet.</p>
+                      <p className="mt-2">Start by adding your first experience!</p>
+                      </div>) : (
+                            user?.experiences.map((exp) => (
                     <div key={exp.id} className="p-4 border rounded-lg space-y-3">
+
+                  
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-medium text-lg">{exp.title}</h3>
+                          <h3 className="font-medium text-lg">{exp.role}</h3>
                           <p className="text-muted-foreground">{exp.company}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">
                             {new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} - 
-                            {exp.current ? " Present" : 
+                            {exp.endDate === null ? " Present" : 
                               ` ${new Date(exp.endDate as string).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`}
                           </p>
-                          {exp.current && (
-                            <Badge variant="outline" className="ml-2">
-                              Current
-                            </Badge>
+                          {exp.endDate === null && (
+                            <Badge>Current</Badge>
                           )}
                         </div>
                       </div>
@@ -468,7 +495,8 @@ export default function ProfilePage() {
                         <Button variant="destructive" size="sm">Delete</Button>
                       </div>
                     </div>
-                  ))}
+                  )))
+                }
                 </CardContent>
               </Card>
 
@@ -516,7 +544,7 @@ export default function ProfilePage() {
                             <FormItem>
                               <FormLabel>Start Date</FormLabel>
                               <FormControl>
-                                <Input type="month" {...field} />
+                                <Input type="date" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -530,7 +558,7 @@ export default function ProfilePage() {
                               <FormLabel>End Date</FormLabel>
                               <FormControl>
                                 <Input 
-                                  type="month" 
+                                  type="date" 
                                   {...field} 
                                   disabled={experienceForm.watch("current")}
                                 />
@@ -615,7 +643,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {skills.map((skill) => (
+                    {user?.skills?.map((skill) => (
                       <div key={skill.id} className="flex justify-between items-center p-3 border rounded-lg">
                         <div>
                           <h3 className="font-medium">{skill.name}</h3>
@@ -683,7 +711,7 @@ export default function ProfilePage() {
                         name="level"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Proficiency Level (1-5)</FormLabel>
+                            <FormLabel>Proficiency Level (1-10)</FormLabel>
                             <FormControl>
                               <div className="flex items-center space-x-2">
                                 <Input 

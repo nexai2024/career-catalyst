@@ -57,7 +57,7 @@ console.log('Profile fetched:', profile);
     };
 
     checkProfileCompletion();
-  }, [user, router]);
+  }, [user, router, axios]);
 
   if (isLoading) {
     return (
