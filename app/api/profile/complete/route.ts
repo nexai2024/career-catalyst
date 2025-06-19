@@ -35,19 +35,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/db';
-import { stackServerApp } from '@/stack';
+import { auth } from '@clerk/nextjs/server';
 
 
 export async function GET(request: Request) {
   const prismaClient = prisma;
-  const user = await stackServerApp.getUser();
-  if (!user) {
+  const { userId } = await auth();
+  if (!userId) {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
   }
-  console.log('Fetching profile for user:', user?.id);
+  console.log('Fetching profile for user:', userId);
   try {
     const profile = await prismaClient.profile.findFirst({
-      where: { userId: user?.id },
+      where: { userId: userId },
       select: { completedAt: true },
     });
     console.log('Profile fetched:', profile);
@@ -67,8 +67,8 @@ export async function POST(request: Request) {
     const profileData = await request.json();
 
     // Get the current user
-    const user = await stackServerApp.getUser();
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         personal_info: profileData[1],
         education: profileData[2],
         experience: profileData[3],

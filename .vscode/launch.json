@@ -35,7 +35,7 @@
         "skipFiles": ["<node_internals>/**"],
         "serverReadyAction": {
           "action": "debugWithChrome",
-          "killOnServerStop": true,
+          "killOnServerStop": true, /;/.
           "pattern": "- Local:.+(https?://.+)",
           "uriFormat": "%s",
           "webRoot": "${workspaceFolder}"

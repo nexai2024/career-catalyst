@@ -13,7 +13,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import UserComponent from "./UserComponent";
-import { useUser } from "@stackframe/stack";
+import { useUser } from "@clerk/nextjs";
 
 const anonRoutes = [
     {

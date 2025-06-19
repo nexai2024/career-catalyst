@@ -1,6 +1,6 @@
 import './globals.css';
-import { StackProvider, StackTheme } from "@stackframe/stack";
-import { stackServerApp } from "../stack";
+
+import {ClerkProvider} from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-  <StackProvider app={stackServerApp}>
+  <ClerkProvider>
      
     <html lang="en" suppressHydrationWarning>
       
@@ -33,7 +33,6 @@ export default function RootLayout({
           enableSystem
         >
           
-          <StackTheme>
           <div className="min-h-screen flex flex-col">
            
           <NavBar />
@@ -42,7 +41,6 @@ export default function RootLayout({
             </main>
             <Toaster />
           </div>
-          </StackTheme>
         
         </ThemeProvider></UserProvider>
     </Suspense>
@@ -50,6 +48,6 @@ export default function RootLayout({
       
     </html>
    
-    </StackProvider>
+    </ClerkProvider>
   );
 }

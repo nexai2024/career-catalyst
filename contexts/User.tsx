@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { CurrentUser, CurrentInternalUser, useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
+import { UserResource } from '@clerk/types';
 const axios = require('axios');
 // type UserType = CurrentUser | CurrentInternalUser | null;
 interface Experience {
@@ -34,7 +35,7 @@ interface UserFields {
   skills?: Skill[];
 }
 
-type UserType = (CurrentUser & UserFields) | null;
+type UserType = Partial<UserResource> & UserFields | null;
 interface UserContextType {
   user: UserType;
   setUser: React.Dispatch<React.SetStateAction<UserType>>;
@@ -45,7 +46,8 @@ export const UserContext = createContext<UserContextType>({
   setUser: () => { },
 });
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const stackUser = useUser() as CurrentUser | null;
+  //const { isSignedIn, user, isLoaded } = useUser()
+  const { user: stackUser } = useUser();
   const [user, setUser] = useState<UserType>(null);
   const exp = async () => {
     const experience: Experience[] = await axios.get('/api/user/experience')
@@ -83,20 +85,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (experiences && experiences.length > 0) {
           iYearsOfExperience = experiences.length
         }
-        // Initialize user with default values for UserFields properties
-        setUser({
-          ...stackUser,
-          name: stackUser.displayName || '',
-          email: stackUser.primaryEmail || '',
-          currentPosition: '',
-          location: '',
-          bio: '',
-          careerGoals: '',
-          image: stackUser.profileImageUrl || '',
+        const skills = await userSkills();
+        
+        // Create a new object that matches UserType (UserResource & UserFields)
+        // without directly spreading stackUser (which includes methods that cause type issues)
+        const userData = {
+          // Only take essential properties from stackUser
+          id: stackUser.id,
+          // UserFields properties
+          name: stackUser.fullName || '',
+          email: stackUser.emailAddresses[0]?.emailAddress || '',
+          currentPosition: (stackUser.publicMetadata?.currentPosition as string) || '',
+          location: (stackUser.publicMetadata?.location as string) || '',
+          bio: (stackUser.publicMetadata?.bio as string) || '',
+          careerGoals: (stackUser.publicMetadata?.careerGoals as string) || '',
+          image: stackUser.imageUrl || '',
           experiences: experiences,
-          yearsOfExperience: iYearsOfExperience, // Default value, can be updated later
-          skills: await userSkills(), // Fetch skills asynchronously
-        });
+          yearsOfExperience: iYearsOfExperience,
+          skills: skills,
+        } as UserType;
+        
+        setUser(userData);
       };
 
       fetchData();

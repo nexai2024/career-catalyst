@@ -1,19 +1,20 @@
 import { UserContext } from "@/contexts/User";
 import { prisma } from "@/lib/db";
 import { stackServerApp } from "@/stack";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { useContext } from "react";
 
 export async function GET(request: Request) {
   const prismaClient = prisma;
-  const user = await stackServerApp.getUser();
-    if (!user) {
+  const user = await auth();
+    if (!user || !user.userId) {
         return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
   try {
     const newExp = await prismaClient.experience.findMany({
     where: {
-      userId: user.id,
+      userId: user.userId,
     },
 })
     return NextResponse.json(newExp);
@@ -24,8 +25,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const prismaClient = prisma;
-  const user = await stackServerApp.getUser();
-  if (!user) {
+  const authData = await auth();
+  if (!authData || !authData.userId) {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
   }
   
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     const newExp = await prismaClient.experience.create({
       data: {
         //id: user?.id,
-        userId: user?.id,
+        userId: authData.userId,
         company: body.company,
         role: body.role,
         startDate: (new Date(body.startDate)).toISOString(),
