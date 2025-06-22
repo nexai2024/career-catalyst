@@ -6,15 +6,20 @@ export async function GET(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
   
   try {
+    const { data: user, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+
     const { data: questions, error } = await supabase
       .from('questions')
       .select('*')
+      .eq('created_by', user.user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     return NextResponse.json(questions);
   } catch (error) {
+    console.error('Error fetching questions:', error);
     return NextResponse.json({ error: 'Error fetching questions' }, { status: 500 });
   }
 }
@@ -30,7 +35,8 @@ export async function POST(request: Request) {
       correctAnswer,
       explanation,
       category,
-      difficulty
+      difficulty,
+      points
     } = await request.json();
 
     const { data: user, error: userError } = await supabase.auth.getUser();
@@ -55,6 +61,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(question);
   } catch (error) {
+    console.error('Error creating question:', error);
     return NextResponse.json({ error: 'Error creating question' }, { status: 500 });
   }
 }

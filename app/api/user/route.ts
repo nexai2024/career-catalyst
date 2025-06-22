@@ -1,19 +1,20 @@
 import { UserContext } from "@/contexts/User";
 import { prisma } from "@/lib/db";
-import { stackServerApp } from "@/stack";
+
 import { NextResponse } from "next/server";
 import { useContext } from "react";
+import { auth } from "@clerk/nextjs/server" // Adjust the path based on your project structure
 
 export async function GET(request: Request) {
   const prismaClient = prisma;
-  const user = await stackServerApp.getUser();
-    if (!user) {
+  const user = await auth();
+    if (!user || !user.userId) {
         return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
   try {
     const newUser = await prismaClient.user.findUnique({
     where: {
-      authid: user.id,
+      authid: user.userId,
     },
 })
     return NextResponse.json(newUser);
@@ -24,8 +25,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const prismaClient = prisma;
-  const user = await stackServerApp.getUser();
-  if (!user) {
+  const user = await auth();
+  if (!user || !user.userId) {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
   }
   
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const newUser = await prismaClient.user.update({
         where: {
-          authid: user?.id,    },
+          authid: user?.userId   },
       data: {
         ...body,
       },

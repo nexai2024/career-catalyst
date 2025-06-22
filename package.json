@@ -17,7 +17,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
-    "@prisma/client": "^6.9.0",
+    "@prisma/client": "^6.10.1",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -83,7 +83,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
-    "prisma": "^6.9.0",
+    "prisma": "^6.10.1",
     "supabase": "^1.131.5"
   }
 }

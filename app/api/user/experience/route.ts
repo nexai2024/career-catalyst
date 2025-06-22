@@ -1,6 +1,6 @@
 import { UserContext } from "@/contexts/User";
 import { prisma } from "@/lib/db";
-import { stackServerApp } from "@/stack";
+
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { useContext } from "react";

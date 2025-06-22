@@ -68,6 +68,11 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">
           Welcome back! Here&apos;s an overview of your career progress.
         </p>
+        <Link href='/lp'>
+          <Button variant="outline" className="mt-2">
+            Generate Learning Plan
+          </Button>
+        </Link>
       </div>
 
       {loading ? (

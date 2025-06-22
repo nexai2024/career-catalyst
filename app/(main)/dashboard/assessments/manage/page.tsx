@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -28,17 +29,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, FileEdit, Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus, Trash2, FileEdit, Eye, Clock, Users, CheckCircle } from "lucide-react";
 
 const assessmentFormSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
   }),
   description: z.string().optional(),
+  instructions: z.string().optional(),
   timeLimit: z.number().min(1).optional(),
   passingScore: z.number().min(0).max(100).optional(),
-  randomizeQuestions: z.boolean().default(false),
   attemptsAllowed: z.number().min(1).default(1),
+  randomizeQuestions: z.boolean().default(false),
+  isPublished: z.boolean().default(false),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 });
 
 const questionFormSchema = z.object({
@@ -54,22 +67,51 @@ const questionFormSchema = z.object({
   points: z.number().min(1).default(1),
 });
 
+interface Assessment {
+  id: string;
+  title: string;
+  description?: string;
+  time_limit_minutes?: number;
+  passing_score?: number;
+  is_published: boolean;
+  created_at: string;
+  _count?: {
+    assessment_questions: number;
+  };
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  question_type: string;
+  category?: string;
+  difficulty: string;
+  created_at: string;
+}
+
 export default function ManageAssessmentsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestionType, setSelectedQuestionType] = useState<string>("multiple_choice");
   const [options, setOptions] = useState<string[]>([""]);
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
 
   const assessmentForm = useForm<z.infer<typeof assessmentFormSchema>>({
     resolver: zodResolver(assessmentFormSchema),
     defaultValues: {
       title: "",
       description: "",
+      instructions: "",
       timeLimit: 60,
       passingScore: 70,
-      randomizeQuestions: false,
       attemptsAllowed: 1,
+      randomizeQuestions: false,
+      isPublished: false,
+      startDate: "",
+      endDate: "",
     },
   });
 
@@ -87,6 +129,35 @@ export default function ManageAssessmentsPage() {
     },
   });
 
+  useEffect(() => {
+    fetchAssessments();
+    fetchQuestions();
+  }, []);
+
+  const fetchAssessments = async () => {
+    try {
+      const response = await fetch("/api/assessments/manage");
+      if (response.ok) {
+        const data = await response.json();
+        setAssessments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      const response = await fetch("/api/questions");
+      if (response.ok) {
+        const data = await response.json();
+        setQuestions(data);
+      }
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    }
+  };
+
   const onAssessmentSubmit = async (values: z.infer<typeof assessmentFormSchema>) => {
     setLoading(true);
     try {
@@ -95,9 +166,20 @@ export default function ManageAssessmentsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          title: values.title,
+          description: values.description,
+          instructions: values.instructions,
+          timeLimit: values.timeLimit,
+          passingScore: values.passingScore,
+          attemptsAllowed: values.attemptsAllowed,
+          randomizeQuestions: values.randomizeQuestions,
+          isPublished: values.isPublished,
+          startDate: values.startDate,
+          endDate: values.endDate,
+        }),
       });
-      console.log(response);
+
       if (!response.ok) throw new Error("Failed to create assessment");
 
       toast({
@@ -106,7 +188,7 @@ export default function ManageAssessmentsPage() {
       });
 
       assessmentForm.reset();
-      router.refresh();
+      fetchAssessments();
     } catch (error) {
       toast({
         title: "Error",
@@ -127,8 +209,14 @@ export default function ManageAssessmentsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...values,
-          options: values.questionType === "multiple_choice" ? { choices: options } : undefined,
+          questionText: values.questionText,
+          questionType: values.questionType,
+          options: values.questionType === "multiple_choice" ? { choices: options.filter(opt => opt.trim()) } : undefined,
+          correctAnswer: values.correctAnswer,
+          explanation: values.explanation,
+          category: values.category,
+          difficulty: values.difficulty,
+          points: values.points,
         }),
       });
 
@@ -141,6 +229,8 @@ export default function ManageAssessmentsPage() {
 
       questionForm.reset();
       setOptions([""]);
+      setIsQuestionDialogOpen(false);
+      fetchQuestions();
     } catch (error) {
       toast({
         title: "Error",
@@ -152,12 +242,66 @@ export default function ManageAssessmentsPage() {
     }
   };
 
+  const deleteAssessment = async (id: string) => {
+    try {
+      const response = await fetch(`/api/assessments/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete assessment");
+
+      toast({
+        title: "Success",
+        description: "Assessment deleted successfully",
+      });
+
+      fetchAssessments();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete assessment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const togglePublishStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/assessments/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          is_published: !currentStatus,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update assessment");
+
+      toast({
+        title: "Success",
+        description: `Assessment ${!currentStatus ? 'published' : 'unpublished'} successfully`,
+      });
+
+      fetchAssessments();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update assessment",
+        variant: "destructive",
+      });
+    }
+  };
+
   const addOption = () => {
     setOptions([...options, ""]);
   };
 
   const removeOption = (index: number) => {
-    setOptions(options.filter((_, i) => i !== index));
+    if (options.length > 1) {
+      setOptions(options.filter((_, i) => i !== index));
+    }
   };
 
   const updateOption = (index: number, value: string) => {
@@ -178,8 +322,8 @@ export default function ManageAssessmentsPage() {
       <Tabs defaultValue="create-assessment" className="space-y-6">
         <TabsList>
           <TabsTrigger value="create-assessment">Create Assessment</TabsTrigger>
-          <TabsTrigger value="create-question">Create Question</TabsTrigger>
-          <TabsTrigger value="manage">Manage Existing</TabsTrigger>
+          <TabsTrigger value="questions">Question Bank</TabsTrigger>
+          <TabsTrigger value="manage">Manage Assessments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="create-assessment">
@@ -224,7 +368,24 @@ export default function ManageAssessmentsPage() {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={assessmentForm.control}
+                    name="instructions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instructions</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter instructions for test takers" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={assessmentForm.control}
                       name="timeLimit"
@@ -235,7 +396,7 @@ export default function ManageAssessmentsPage() {
                             <Input 
                               type="number" 
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                             />
                           </FormControl>
                           <FormDescription>
@@ -256,7 +417,7 @@ export default function ManageAssessmentsPage() {
                             <Input 
                               type="number" 
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                             />
                           </FormControl>
                           <FormMessage />
@@ -283,28 +444,89 @@ export default function ManageAssessmentsPage() {
                     />
                   </div>
 
-                  <FormField
-                    control={assessmentForm.control}
-                    name="randomizeQuestions"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Randomize Questions
-                          </FormLabel>
-                          <FormDescription>
-                            Shuffle question order for each attempt
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={assessmentForm.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="datetime-local" 
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={assessmentForm.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="datetime-local" 
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <FormField
+                      control={assessmentForm.control}
+                      name="randomizeQuestions"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Randomize Questions
+                            </FormLabel>
+                            <FormDescription>
+                              Shuffle question order for each attempt
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={assessmentForm.control}
+                      name="isPublished"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Publish Assessment
+                            </FormLabel>
+                            <FormDescription>
+                              Make this assessment available to users
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button type="submit" disabled={loading}>
                     {loading ? "Creating..." : "Create Assessment"}
@@ -315,199 +537,268 @@ export default function ManageAssessmentsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="create-question">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Question</CardTitle>
-              <CardDescription>
-                Add a new question to the question bank
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...questionForm}>
-                <form onSubmit={questionForm.handleSubmit(onQuestionSubmit)} className="space-y-6">
-                  <FormField
-                    control={questionForm.control}
-                    name="questionText"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Question Text</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter your question" 
-                            {...field} 
+        <TabsContent value="questions">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Question Bank</CardTitle>
+                    <CardDescription>
+                      Manage your question library
+                    </CardDescription>
+                  </div>
+                  <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Question
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Create New Question</DialogTitle>
+                        <DialogDescription>
+                          Add a new question to your question bank
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...questionForm}>
+                        <form onSubmit={questionForm.handleSubmit(onQuestionSubmit)} className="space-y-6">
+                          <FormField
+                            control={questionForm.control}
+                            name="questionText"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Question Text</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Enter your question" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
-                  <FormField
-                    control={questionForm.control}
-                    name="questionType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Question Type</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedQuestionType(value);
-                          }}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select question type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                            <SelectItem value="true_false">True/False</SelectItem>
-                            <SelectItem value="short_answer">Short Answer</SelectItem>
-                            <SelectItem value="essay">Essay</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {selectedQuestionType === "multiple_choice" && (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <FormLabel>Answer Options</FormLabel>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addOption}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Option
-                        </Button>
-                      </div>
-                      {options.map((option, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            value={option}
-                            onChange={(e) => updateOption(index, e.target.value)}
-                            placeholder={`Option ${index + 1}`}
+                          <FormField
+                            control={questionForm.control}
+                            name="questionType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Question Type</FormLabel>
+                                <Select
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setSelectedQuestionType(value);
+                                  }}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select question type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                                    <SelectItem value="true_false">True/False</SelectItem>
+                                    <SelectItem value="short_answer">Short Answer</SelectItem>
+                                    <SelectItem value="essay">Essay</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removeOption(index)}
-                          >
+
+                          {selectedQuestionType === "multiple_choice" && (
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <FormLabel>Answer Options</FormLabel>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={addOption}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Option
+                                </Button>
+                              </div>
+                              {options.map((option, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <Input
+                                    value={option}
+                                    onChange={(e) => updateOption(index, e.target.value)}
+                                    placeholder={`Option ${index + 1}`}
+                                  />
+                                  {options.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => removeOption(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <FormField
+                            control={questionForm.control}
+                            name="correctAnswer"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Correct Answer</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                  For multiple choice, enter the exact text of the correct option
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={questionForm.control}
+                            name="explanation"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Explanation (Optional)</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Explain the correct answer" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <FormField
+                              control={questionForm.control}
+                              name="category"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Category</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="e.g., Programming" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={questionForm.control}
+                              name="difficulty"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Difficulty</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select difficulty" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="easy">Easy</SelectItem>
+                                      <SelectItem value="medium">Medium</SelectItem>
+                                      <SelectItem value="hard">Hard</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={questionForm.control}
+                              name="points"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Points</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              onClick={() => setIsQuestionDialogOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit" disabled={loading}>
+                              {loading ? "Creating..." : "Create Question"}
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {questions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No questions found. Create your first question to get started.
+                    </div>
+                  ) : (
+                    questions.map((question) => (
+                      <div
+                        key={question.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">{question.question_text}</h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline">{question.question_type.replace('_', ' ')}</Badge>
+                            <Badge variant="secondary">{question.difficulty}</Badge>
+                            {question.category && (
+                              <Badge variant="outline">{question.category}</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon">
+                            <FileEdit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))
                   )}
-
-                  <FormField
-                    control={questionForm.control}
-                    name="correctAnswer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correct Answer</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          For multiple choice, enter the exact text of the correct option
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={questionForm.control}
-                    name="explanation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Explanation</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Explain the correct answer" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={questionForm.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Programming" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={questionForm.control}
-                      name="difficulty"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Difficulty</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select difficulty" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="easy">Easy</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={questionForm.control}
-                      name="points"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Points</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Creating..." : "Create Question"}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="manage">
@@ -520,41 +811,70 @@ export default function ManageAssessmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Technical Skills Assessment</h3>
-                    <p className="text-sm text-muted-foreground">30 questions • 45 minutes</p>
+                {assessments.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No assessments found. Create your first assessment to get started.
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <FileEdit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Programming Fundamentals</h3>
-                    <p className="text-sm text-muted-foreground">25 questions • 60 minutes</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <FileEdit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                ) : (
+                  assessments.map((assessment) => (
+                    <div
+                      key={assessment.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium">{assessment.title}</h3>
+                          <Badge variant={assessment.is_published ? "default" : "secondary"}>
+                            {assessment.is_published ? "Published" : "Draft"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {assessment.description}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          {assessment.time_limit_minutes && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{assessment.time_limit_minutes} minutes</span>
+                            </div>
+                          )}
+                          {assessment.passing_score && (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>{assessment.passing_score}% to pass</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span>{assessment._count?.assessment_questions || 0} questions</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => togglePublishStatus(assessment.id, assessment.is_published)}
+                        >
+                          {assessment.is_published ? "Unpublish" : "Publish"}
+                        </Button>
+                        <Button variant="outline" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon">
+                          <FileEdit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => deleteAssessment(assessment.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
