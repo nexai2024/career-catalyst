@@ -1,4 +1,5 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { prisma } from "@/lib/db";
+import { auth } from "@clerk/nextjs/server";
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -6,24 +7,45 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies });
   
-  try {
-    const { data: assessment, error: assessmentError } = await supabase
-      .from('assessments')
-      .select(`
-        *,
-        assessment_questions (
-          id,
-          points,
-          question_order,
-          questions (*)
-        )
-      `)
-      .eq('id', params.id)
-      .single();
+  const prismaClient = prisma;
+  const user = await auth();
+    if (!user || !user.userId) {
+        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
 
-    if (assessmentError) throw assessmentError;
+  try {
+    const assessment = prismaClient.assessment.findUnique({
+      where: {
+        id: params.id,
+      },
+      include: {
+        questions: {
+          select: {
+            id: true,
+            points: true,
+            questionOrder: true,
+            question: {
+              select: {
+                id: true,
+                questionText: true,
+                questionType: true,
+                options: true,
+                correctAnswer: true,
+                explanation: true,
+                category: true,
+                difficulty: true,
+                points: true,
+                createdBy: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!assessment) throw new Error('Assessment not found');
 
     return NextResponse.json(assessment);
   } catch (error) {
@@ -36,38 +58,29 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies });
+  
   
   try {
     const updates = await request.json();
 
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
-    // Check if user owns this assessment or is admin
-    const { data: assessment, error: checkError } = await supabase
-      .from('assessments')
-      .select('created_by')
-      .eq('id', params.id)
-      .single();
-
-    if (checkError) throw checkError;
-    
-    if (assessment.created_by !== user.user.id) {
+    const prismaClient = prisma;
+  const user = await auth();
+    if (!user || !user.userId) {
+        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
+  
+    if (assessment.created_by !== user.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-
-    const { data: updatedAssessment, error: updateError } = await supabase
-      .from('assessments')
-      .update({
+   const updatedAssessment = await prismaClient.assessment.update({
+      where: {
+        id: params.id,
+      },
+      data: {
         ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', params.id)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
+        updatedAt: new Date(),
+      },
+      },)
 
     return NextResponse.json(updatedAssessment);
   } catch (error) {
@@ -80,32 +93,23 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies });
+  
   
   try {
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
-    // Check if user owns this assessment or is admin
-    const { data: assessment, error: checkError } = await supabase
-      .from('assessments')
-      .select('created_by')
-      .eq('id', params.id)
-      .single();
-
-    if (checkError) throw checkError;
-    
-    if (assessment.created_by !== user.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    const prismaClient = prisma;
+  const user = await auth();
+    if (!user || !user.userId) {
+        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
-
-    const { error } = await supabase
-      .from('assessments')
-      .delete()
-      .eq('id', params.id);
-
-    if (error) throw error;
-
+    // Check if user owns this assessment or is admin
+    const data = await prismaClient.assessment.delete({
+      where: {
+        id: params.id,
+      },
+    });
+    if (!data) {
+      return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+    }
     return NextResponse.json({ message: 'Assessment deleted successfully' });
   } catch (error) {
     console.error('Error deleting assessment:', error);

@@ -1,21 +1,26 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
-  
+  const prismaClient = prisma;
+   const user = await auth();
+     if (!user || !user.userId) {
+         return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+     }
+ 
   try {
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
+    const questions = await prismaClient.question.findMany({
+      where: {
+        createdBy: user.userId
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
 
-    const { data: questions, error } = await supabase
-      .from('questions')
-      .select('*')
-      .eq('created_by', user.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    if (!questions) throw new Error('Error fetching questions');
 
     return NextResponse.json(questions);
   } catch (error) {
@@ -25,7 +30,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const prismaClient = prisma;
+  const user = await auth();
+    if (!user || !user.userId) {
+        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
   
   try {
     const {
@@ -39,25 +48,33 @@ export async function POST(request: Request) {
       points
     } = await request.json();
 
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
-    const { data: question, error: questionError } = await supabase
-      .from('questions')
-      .insert({
-        question_text: questionText,
-        question_type: questionType,
+    const question = await prismaClient.question.create({
+      data: {
+        questionText,
+        questionType,
         options,
-        correct_answer: correctAnswer,
+        correctAnswer,
         explanation,
         category,
         difficulty,
-        created_by: user.user.id
-      })
-      .select()
-      .single();
-
-    if (questionError) throw questionError;
+        points,
+        createdBy: user.userId
+      },
+      select: {
+        id: true,
+        questionText: true,
+        questionType: true,   
+        options: true,
+        correctAnswer: true,
+        explanation: true,
+        category: true,
+        difficulty: true,
+        points: true,
+        createdBy: true,
+        createdAt: true
+      }
+    });
+    if (!question) throw new Error('Error creating question');
 
     return NextResponse.json(question);
   } catch (error) {

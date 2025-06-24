@@ -1,14 +1,17 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { prisma } from "@/lib/db";
+import { auth } from "@clerk/nextjs/server";
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
+  
   
   try {
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
+    const prismaClient = prisma;
+  const user = await auth();
+    if (!user || !user.userId) {
+        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
     const { data: userAssessments, error } = await supabase
       .from('user_assessments')
       .select(`

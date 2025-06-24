@@ -46,6 +46,7 @@ const assessmentFormSchema = z.object({
   description: z.string().optional(),
   instructions: z.string().optional(),
   timeLimit: z.number().min(1).optional(),
+  type: z.enum(["quiz", "exam", "survey","default"]).default("default"),
   passingScore: z.number().min(0).max(100).optional(),
   attemptsAllowed: z.number().min(1).default(1),
   randomizeQuestions: z.boolean().default(false),
@@ -106,6 +107,7 @@ export default function ManageAssessmentsPage() {
       description: "",
       instructions: "",
       timeLimit: 60,
+      type: "default",
       passingScore: 70,
       attemptsAllowed: 1,
       randomizeQuestions: false,
@@ -171,6 +173,7 @@ export default function ManageAssessmentsPage() {
           description: values.description,
           instructions: values.instructions,
           timeLimit: values.timeLimit,
+          type: values.type,
           passingScore: values.passingScore,
           attemptsAllowed: values.attemptsAllowed,
           randomizeQuestions: values.randomizeQuestions,
@@ -527,6 +530,34 @@ export default function ManageAssessmentsPage() {
                       )}
                     />
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <FormField
+                      control={assessmentForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assessment Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select assessment type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="quiz">Quiz</SelectItem>
+                              <SelectItem value="exam">Exam</SelectItem>
+                              <SelectItem value="survey">Survey</SelectItem>
+                              <SelectItem value="default">Default</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button type="submit" disabled={loading}>
                     {loading ? "Creating..." : "Create Assessment"}
@@ -774,7 +805,7 @@ export default function ManageAssessmentsPage() {
                         <div className="flex-1">
                           <h3 className="font-medium">{question.question_text}</h3>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline">{question.question_type.replace('_', ' ')}</Badge>
+                            <Badge variant="outline">{question.question_type}</Badge>
                             <Badge variant="secondary">{question.difficulty}</Badge>
                             {question.category && (
                               <Badge variant="outline">{question.category}</Badge>

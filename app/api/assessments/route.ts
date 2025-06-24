@@ -1,4 +1,4 @@
-// import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+// import { prisma } from "@/lib/db";
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
@@ -6,7 +6,7 @@ import { auth } from '@clerk/nextjs/server';
 
 
 export async function GET(request: Request) {
-//  const supabase = createRouteHandlerClient({ cookies });
+//  
   const prismaClient = prisma;
   const user = await auth();
     if (!user || !user.userId) {
@@ -60,25 +60,8 @@ export async function POST(request: Request) {
       questions 
     } = await request.json();
 
- 
-    // Create the assessment
-    // const { data: assessment, error: assessmentError } = await supabase
-    //   .from('assessments')
-    //   .insert({
-    //     title,
-    //     description,
-    //     instructions,
-    //     time_limit_minutes: timeLimit,
-    //     passing_score: passingScore,
-    //     attempts_allowed: attemptsAllowed || 1,
-    //     randomize_questions: randomizeQuestions || false,
-    //     is_published: isPublished || false,
-    //     start_date: startDate || null,
-    //     end_date: endDate || null,
-    //     created_by: user.user.id
-    //   })
-    //   .select()
-    //   .single();
+ console.log('Creating assessment with data:', type)
+
     const assessment = await prismaClient.assessment.create({
       data: {
         title,
