@@ -72,8 +72,8 @@ export default function ModulePage({
           const courseData = await response.json();
           setCourse(courseData);
           
-          const module = courseData.course_modules.find((m: Module) => m.id === params.moduleId);
-          setCurrentModule(module);
+          const cmodule = courseData.course_modules.find((m: Module) => m.id === params.moduleId);
+          setCurrentModule(cmodule);
           
           const moduleProgress = courseData.module_progress?.find((p: ModuleProgress) => p.module_id === params.moduleId);
           setProgress(moduleProgress);
@@ -92,7 +92,7 @@ export default function ModulePage({
       } finally {
         setLoading(false);
       }
-    };;
+    }; 
     
     // Timer for tracking time spent
     const timer = setInterval(() => {
@@ -102,7 +102,9 @@ export default function ModulePage({
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, [params.id, params.moduleId, isPlaying]);
+  }, 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [params.id, params.moduleId, isPlaying]);
 
   const updateProgress = async (status: string, score?: number) => {
     try {

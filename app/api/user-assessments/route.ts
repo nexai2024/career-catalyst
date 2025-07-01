@@ -12,33 +12,33 @@ export async function GET(request: Request) {
     if (!user || !user.userId) {
         return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
-    const { data: userAssessments, error } = await supabase
-      .from('user_assessments')
-      .select(`
-        id,
-        assessment_id,
-        start_time,
-        end_time,
-        score,
-        status,
-        assessments (
-          id,
-          title,
-          description,
-          time_limit_minutes,
-          passing_score,
-          is_published
-        )
-      `)
-      .eq('user_id', user.user.id)
-      .order('start_time', { ascending: false });
+    const data = await prismaClient.userAssessment.findMany({
+      where: {
+        userId: user.userId,
+      },
+      include: {
+        assessment: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            timeLimit: true,
+            passingScore: true,
+            isPublished: true,
+          },
+        },
+      },
+      orderBy: {
+        startedAt: 'desc',
+      },
+    }); 
 
-    if (error) throw error;
+    if (!data) throw new Error('No assessments found for the user');
 
     // Transform the data to match the expected format
-    const transformedData = userAssessments.map(ua => ({
+    const transformedData = data.map(ua => ({
       ...ua,
-      assessment: ua.assessments
+      assessment: ua.assessment
     }));
 
     return NextResponse.json(transformedData);

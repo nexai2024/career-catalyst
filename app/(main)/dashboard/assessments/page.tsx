@@ -238,14 +238,16 @@ export default function AssessmentsPage() {
 
 
   const handleStartAssessment = async (assessmentId: string) => {
+    console.log("Starting assessment:", assessmentId);
     setStartingAssessment(assessmentId);
     try {
-      const response = await fetch(`/api/assessments/${assessmentId}/start`, {
-        method: "POST",
+      const response = await fetch(`/api/assessments/${assessmentId}`, {
+        method: "GET",
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log("redirecting Assessment data:", data);
         toast({
           title: "Assessment Started",
           description: "Redirecting to assessment...",

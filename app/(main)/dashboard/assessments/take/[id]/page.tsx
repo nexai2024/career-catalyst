@@ -20,6 +20,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+interface params {
+
+  id: Promise<any>;
+}
+
 
 interface Question {
   id: string;
@@ -49,7 +54,8 @@ interface Assessment {
   assessment_questions: AssessmentQuestion[];
 }
 
-export default function TakeAssessmentPage({ params }: { params: { id: string } }) {
+export default function TakeAssessmentPage({ params }: { params: params }) {
+  let id;
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -60,23 +66,27 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+
   const [showInstructions, setShowInstructions] = useState(true);
 
   useEffect(() => {
+    id = params.id;
+    console.log("Assessment ID:", id);
     const fetchAssessment = async () => {
       try {
         const assessmentRes = await fetch(`/api/assessments/${params.id}`);
         if (!assessmentRes.ok) {
           throw new Error("Assessment not found");
         }
-        
+
         const assessmentData = await assessmentRes.json();
-        setAssessment(assessmentData);
-        
+        const sortedQuestions = assessmentData.assessment_questions.sort((a: { question_order: number; }, b: { question_order: number; }) => a.question_order - b.question_order);
+        setAssessment({ ...assessmentData, assessment_questions: sortedQuestions });
+
         if (assessmentData.time_limit_minutes) {
           setTimeRemaining(assessmentData.time_limit_minutes * 60);
         }
-        
+
         setLoading(false);
       } catch (error) {
         toast({
@@ -90,44 +100,46 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
     fetchAssessment();
   }, [params.id, router, toast]);
 
- 
+
   useEffect(() => {
     if (timeRemaining === null || timeRemaining <= 0 || showInstructions) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
-        if (prev === null || prev <= 0) {
+        if (prev === undefined || prev === null || prev <= 0) {
           clearInterval(timer);
           handleAutoSubmit();
           return 0;
         }
         return prev - 1;
       });
-  }, 1000);
+    }, 1000);
 
-  const handleAutoSubmit = () => {
-    toast({
-      title: "Time's Up!",
-      description: "Assessment time has expired. Submitting your answers...",
-      variant: "destructive",
-    });
-    handleSubmit();
-  };
+    const handleAutoSubmit = () => {
+      toast({
+        title: "Time's Up!",
+        description: "Assessment time has expired. Submitting your answers...",
+        variant: "destructive",
+      });
+      handleSubmit();
+    };
 
-  return () => clearInterval(timer);
-}, [timeRemaining, showInstructions]);
+    return () => clearInterval(timer);
+  }, 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [timeRemaining, showInstructions]);
 
-  const startAssessment = async () => {
+  const startAssessment = () => {
     try {
-      const startRes = await fetch(`/api/assessments/${params.id}/start`, {
+      const startRes = fetch(`/api/assessments/${params.id}/start`, {
         method: "POST",
       });
-      
+
       if (!startRes.ok) {
         throw new Error("Failed to start assessment");
       }
-      
-      const startData = await startRes.json();
+
+      const startData = startRes.json();
       setAttemptId(startData.id);
       setShowInstructions(false);
     } catch (error) {
@@ -153,13 +165,16 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
 
     setSubmitting(true);
     try {
-      const questions = assessment.assessment_questions;
-      const formattedResponses = questions.map((aq) => ({
-        questionId: aq.questions.id,
-        answer: responses[aq.questions.id] || "",
-        isCorrect: responses[aq.questions.id] === aq.questions.correct_answer,
-        pointsEarned: responses[aq.questions.id] === aq.questions.correct_answer ? aq.points : 0,
-      }));
+      const questions = assessment ? assessment.assessment_questions : [];
+      const formattedResponses = questions.map((aq) => {
+        const userResponse = responses[aq.questions.id] || ""; // Fallback to empty string if no response
+        return {
+          questionId: aq.questions.id,
+          answer: userResponse,
+          isCorrect: userResponse === aq.questions.correct_answer,
+          pointsEarned: userResponse === aq.questions.correct_answer ? aq.points : 0,
+        };
+      });
 
       const submitRes = await fetch(`/api/assessments/${params.id}/submit`, {
         method: "POST",
@@ -177,12 +192,12 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
       }
 
       const result = await submitRes.json();
-      
+
       toast({
         title: "Assessment Submitted",
         description: `Your score: ${result.score}%`,
       });
-      
+
       router.push("/assessments");
     } catch (error) {
       toast({
@@ -198,7 +213,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
 
   const getAnsweredCount = () => {
     if (!assessment) return 0;
-    return assessment.assessment_questions.filter(aq => 
+    return assessment.assessment_questions.filter(aq =>
       responses[aq.questions.id] && responses[aq.questions.id].trim() !== ""
     ).length;
   };
@@ -253,7 +268,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
                 </p>
               </div>
             )}
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <h4 className="font-medium">Assessment Details</h4>
@@ -267,7 +282,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
                   )}
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="font-medium">Important Notes</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
@@ -290,16 +305,27 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
         </Card>
       </div>
     );
+    const questions = assessment?.assessment_questions;
   }
 
   const questions = assessment.assessment_questions.sort((a, b) => a.question_order - b.question_order);
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
+  // Converts a time duration in seconds into a formatted string "MM:SS".
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  // const getTimeRemainingClass = (timeRemaining: number | null) => {
+  //   return timeRemaining !== null && timeRemaining < 300 ? 'text-destructive' : 'text-muted-foreground';
+  // };
+  //   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  // };
+  const getTimeRemainingClass = (timeRemaining: number | null) => {
+    if (timeRemaining === null) return "text-muted-foreground";
+    return timeRemaining < 300 ? "text-destructive" : "text-muted-foreground";
   };
 
   return (
@@ -312,17 +338,16 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
               <CardDescription>
                 Question {currentQuestionIndex + 1} of {questions.length}
               </CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
-              {timeRemaining !== null && (
-                <div className={`flex items-center gap-2 ${timeRemaining < 300 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                  <Clock className="h-4 w-4" />
-                  <span className="font-mono">{formatTime(timeRemaining)}</span>
-                </div>
-              )}
-              <div className="text-sm text-muted-foreground">
-                {getAnsweredCount()}/{questions.length} answered
+              <div className={`flex items-center gap-2 ${getTimeRemainingClass(timeRemaining)}`}>
+                <Clock className="h-4 w-4" />
+                <span className="font-mono">{formatTime(timeRemaining)}</span>
               </div>
+              <Clock className="h-4 w-4" />
+              <span className="font-mono">{formatTime(timeRemaining)}</span>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              {getAnsweredCount()}/{questions.length} answered
             </div>
           </div>
         </CardHeader>
@@ -342,7 +367,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
               </span>
               <div className="flex-1">
                 <h3 className="text-lg font-medium mb-4">{currentQuestion.questions.question_text}</h3>
-                
+
                 {currentQuestion.questions.question_type === "multiple_choice" && (
                   <RadioGroup
                     value={responses[currentQuestion.questions.id] || ""}
@@ -379,15 +404,15 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
                   </RadioGroup>
                 )}
 
-                {(currentQuestion.questions.question_type === "short_answer" || 
+                {(currentQuestion.questions.question_type === "short_answer" ||
                   currentQuestion.questions.question_type === "essay") && (
-                  <Textarea
-                    value={responses[currentQuestion.questions.id] || ""}
-                    onChange={(e) => handleResponseChange(currentQuestion.questions.id, e.target.value)}
-                    placeholder="Enter your answer..."
-                    className={currentQuestion.questions.question_type === "essay" ? "min-h-[150px]" : "min-h-[100px]"}
-                  />
-                )}
+                    <Textarea
+                      value={responses[currentQuestion.questions.id] || ""}
+                      onChange={(e) => handleResponseChange(currentQuestion.questions.id, e.target.value)}
+                      placeholder="Enter your answer..."
+                      className={currentQuestion.questions.question_type === "essay" ? "min-h-[150px]" : "min-h-[100px]"}
+                    />
+                  )}
               </div>
             </div>
           </div>
@@ -395,13 +420,13 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
           <div className="flex justify-between pt-4">
             <Button
               variant="outline"
-              onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
+              onClick={() => setCurrentQuestionIndex((prev: number) => prev - 1)}
               disabled={currentQuestionIndex === 0}
             >
               <ChevronLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>
-            
+
             {currentQuestionIndex === questions.length - 1 ? (
               <Button
                 onClick={() => setShowSubmitDialog(true)}
@@ -411,7 +436,7 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
               </Button>
             ) : (
               <Button
-                onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                onClick={() => setCurrentQuestionIndex((prev: number) => prev + 1)}
               >
                 Next
                 <ChevronRight className="h-4 w-4 ml-2" />
@@ -423,28 +448,32 @@ export default function TakeAssessmentPage({ params }: { params: { id: string } 
 
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit Assessment?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have answered {getAnsweredCount()} out of {questions.length} questions.
-              {getAnsweredCount() < questions.length && (
-                <span className="block mt-2 text-amber-600">
-                  ⚠️ You have {questions.length - getAnsweredCount()} unanswered questions. 
-                  These will be marked as incorrect.
-                </span>
-              )}
-              <span className="block mt-2">
-                Are you sure you want to submit your assessment? This action cannot be undone.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Review Answers</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Assessment"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {getAnsweredCount() < questions.length && (
+            <span className="block mt-2 text-amber-600">
+              ⚠️ You have {questions.length - getAnsweredCount()} unanswered questions.
+              Unanswered questions will be marked as incorrect and will reduce your final score.
+            </span>
+          )}
+          <span> You have {questions.length - getAnsweredCount()} unanswered questions.
+            These will be marked as incorrect.
+          </span>
+          <span className="block mt-2">
+            Are you sure you want to submit your assessment? This action cannot be undone.
+          </span>
         </AlertDialogContent>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Review Answers</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSubmit} disabled={submitting}>
+            {submitting ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                Submitting...
+              </div>
+            ) : (
+              "Submit Assessment"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
       </AlertDialog>
     </div>
   );

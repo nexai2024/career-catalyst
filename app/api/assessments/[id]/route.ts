@@ -2,12 +2,16 @@ import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { use } from 'react';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  
+  const { id } = params;
+  if (!id) {
+    return NextResponse.json({ error: 'Missing assessment ID' }, { status: 400 });
+  }
   const prismaClient = prisma;
   const user = await auth();
     if (!user || !user.userId) {
@@ -17,7 +21,7 @@ export async function GET(
   try {
     const assessment = prismaClient.assessment.findUnique({
       where: {
-        id: params.id,
+        id: id,
       },
       include: {
         questions: {

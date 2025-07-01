@@ -63,29 +63,30 @@ export default function DocumentsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const response = await fetch("/api/documents");
-        if (response.ok) {
-          const data = await response.json();
-          setDocuments(data);
-        }
-      } catch (error) {
-        console.error("Error fetching documents:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load documents",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDocuments();
-  }, []);
+  }, 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  []);
 
  
-
+  const fetchDocuments = async () => {
+    try {
+      const response = await fetch("/api/documents");
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load documents",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleGenerateDocument = async () => {
     if (!selectedType) {
       toast({

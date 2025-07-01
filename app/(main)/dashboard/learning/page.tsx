@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Course {
   id: string;
@@ -398,7 +399,7 @@ export default function LearningPage() {
                 <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                     {course.thumbnail_url ? (
-                      <img 
+                      <Image
                         src={course.thumbnail_url} 
                         alt={course.title}
                         className="w-full h-full object-cover"
