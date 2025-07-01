@@ -269,57 +269,55 @@ function generatePortfolioHTML(content: any): string {
   `;
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const supabase = createRouteHandlerClient({ cookies });
-  
-  try {
-    const { searchParams } = new URL(request.url);
-    const format = searchParams.get('format') || 'html';
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    const supabase = createRouteHandlerClient({ cookies });
 
-    const { data: user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
+    try {
+      const { searchParams } = new URL(request.url);
+      const format = searchParams.get('format') || 'html';
 
-    const { data: document, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', params.id)
-      .eq('user_id', user.user.id)
-      .single();
+      const { data: user, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
 
-    if (error) throw error;
+      const { data: document, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', params.id)
+        .eq('user_id', user.user.id)
+        .single();
 
-    let htmlContent = '';
-    
-    switch (document.type) {
-      case 'resume':
-        htmlContent = generateResumeHTML(document.content);
-        break;
-      case 'cover_letter':
-        htmlContent = generateCoverLetterHTML(document.content);
-        break;
-      case 'portfolio':
-        htmlContent = generatePortfolioHTML(document.content);
-        break;
-      default:
-        throw new Error('Unsupported document type for export');
+      if (error) throw error;
+
+      let htmlContent = '';
+      
+      switch (document.type) {
+        case 'resume':
+          htmlContent = generateResumeHTML(document.content);
+          break;
+        case 'cover_letter':
+          htmlContent = generateCoverLetterHTML(document.content);
+          break;
+        case 'portfolio':
+          htmlContent = generatePortfolioHTML(document.content);
+          break;
+        default:
+          throw new Error('Unsupported document type for export');
+      }
+
+      if (format === 'html') {
+        return new NextResponse(htmlContent, {
+          headers: {
+            'Content-Type': 'text/html',
+            'Content-Disposition': `attachment; filename="${document.title}.html"`
+          }
+        });
+      }
+
+      // For future PDF export functionality
+      return NextResponse.json({ error: 'PDF export not yet implemented' }, { status: 501 });
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      return NextResponse.json({ error: 'Error exporting document' }, { status: 500 });
     }
-
-    if (format === 'html') {
-      return new NextResponse(htmlContent, {
-        headers: {
-          'Content-Type': 'text/html',
-          'Content-Disposition': `attachment; filename="${document.title}.html"`
-        }
-      });
-    }
-
-    // For future PDF export functionality
-    return NextResponse.json({ error: 'PDF export not yet implemented' }, { status: 501 });
-  } catch (error) {
-    console.error('Error exporting document:', error);
-    return NextResponse.json({ error: 'Error exporting document' }, { status: 500 });
-  }
 }

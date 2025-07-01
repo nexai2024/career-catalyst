@@ -4,10 +4,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string; moduleId: string } }
+  props: { params: Promise<{ id: string; moduleId: string }> }
 ) {
+  const params = await props.params;
   const supabase = createRouteHandlerClient({ cookies });
-  
+
   try {
     const { status, timeSpentMinutes, score } = await request.json();
 

@@ -4,19 +4,17 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { use } from 'react';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { id } = params;
   if (!id) {
     return NextResponse.json({ error: 'Missing assessment ID' }, { status: 400 });
   }
   const prismaClient = prisma;
   const user = await auth();
-    if (!user || !user.userId) {
-        return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
-    }
+  if (!user || !user.userId) {
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+  }
 
   try {
     const assessment = prismaClient.assessment.findUnique({
@@ -58,12 +56,10 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  
-  
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+
+
   try {
     const updates = await request.json();
 
@@ -93,12 +89,10 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  
-  
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+
+
   try {
     const prismaClient = prisma;
   const user = await auth();

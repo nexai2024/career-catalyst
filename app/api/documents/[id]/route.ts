@@ -2,12 +2,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = createRouteHandlerClient({ cookies });
-  
+
   try {
     const { data: user, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
@@ -28,12 +26,10 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = createRouteHandlerClient({ cookies });
-  
+
   try {
     const updates = await request.json();
 
@@ -60,12 +56,10 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = createRouteHandlerClient({ cookies });
-  
+
   try {
     const { data: user, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
