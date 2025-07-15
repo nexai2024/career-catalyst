@@ -17,7 +17,7 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   }
 
   try {
-    const assessment = prismaClient.assessment.findUnique({
+    const assessment = await prismaClient.assessment.findUnique({
       where: {
         id: id,
       },
@@ -25,22 +25,20 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
         questions: {
           select: {
             id: true,
-            points: true,
-            questionOrder: true,
             question: {
               select: {
                 id: true,
-                questionText: true,
-                questionType: true,
+                question_text: true,
+                question_type: true,
                 options: true,
-                correctAnswer: true,
+                correct_answer: true,
                 explanation: true,
                 category: true,
                 difficulty: true,
                 points: true,
-                createdBy: true,
-                createdAt: true,
-                updatedAt: true,
+                created_by: true,
+                created_at: true,
+                updated_at: true,
               },
             },
           },
@@ -48,7 +46,8 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
       },
     });
     if (!assessment) throw new Error('Assessment not found');
-
+   console.log('Assessment fetched:', assessment);
+   console.log("Assessment Questions:", assessment.questions);
     return NextResponse.json(assessment);
   } catch (error) {
     console.error('Error fetching assessment:', error);
@@ -69,9 +68,9 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
         return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
   
-    if (assessment.created_by !== user.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    // if (assessment.userId !== user.userId) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    // }
    const updatedAssessment = await prismaClient.assessment.update({
       where: {
         id: params.id,

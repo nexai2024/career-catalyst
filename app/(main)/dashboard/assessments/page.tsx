@@ -184,7 +184,7 @@ function CompletedAssessmentCard({
           <Button>Retake Assessment</Button>
         )}
         {userAssessment.status === 'in_progress' && (
-          <Link href={`/assessments/take/${userAssessment.assessment_id}`}>
+          <Link href={`/dashboard/assessments/take/${userAssessment.assessment_id}`}>
             <Button>Continue Assessment</Button>
           </Link>
         )}

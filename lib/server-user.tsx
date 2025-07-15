@@ -1,7 +1,7 @@
-"use client";
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+//import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { UserResource } from '@clerk/types';
+import { useEffect } from 'react';
 const axios = require('axios');
 // type UserType = CurrentUser | CurrentInternalUser | null;
 interface Experience {
@@ -49,6 +49,7 @@ interface Project {
   liveUrl: string;
 }
 interface UserFields {
+  id: string;
   name: string;
   email: string;
   currentPosition: string;
@@ -69,19 +70,12 @@ interface UserFields {
 }
 
 type UserType = Partial<UserResource> & UserFields | null;
-interface UserContextType {
-  user: UserType;
-  setUser: React.Dispatch<React.SetStateAction<UserType>>;
-}
 
-export const UserContext = createContext<UserContextType>({
-  user: null,
-  setUser: () => { },
-});
-export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export default function ServerUser(): UserType {
+  return null; // Return null as a default value to satisfy the return type
   //const { isSignedIn, user, isLoaded } = useUser()
   const { user: stackUser } = useUser();
-  const [user, setUser] = useState<UserType>(null);
+console.log('Stack User:', stackUser);
   const exp = async () => {
     const experience: Experience[] = await axios.get('/api/user/experience')
       .then(function (response: any) {
@@ -109,6 +103,20 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('Skills:', skills);
 
     return skills;
+  }
+  const userCertifications = async () => {
+    const certifications: Certification[] = await axios.get('/api/user/certifications')
+      .then(function (response: any) {
+        console.log('Certificaition data:', response.data);
+        return response.data;
+      })
+      .catch(function (error: Error) {
+        console.error('Error fetching certifications:', error);
+        return [];
+      });
+    console.log('Certifications:', certifications);
+
+    return certifications;
   }
   const userAwards = async () => {
     const awards: Award[] = await axios.get('/api/user/awards')
@@ -138,7 +146,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return projects;
   }
-  useEffect(() => {
+
     if (stackUser) {
       const fetchData = async () => {
         const experiences = await exp();
@@ -149,48 +157,43 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const skills = await userSkills();
         const awards = await userAwards();
         const projects = await userProjects();
+        const certifications = await userCertifications();
         console.log('Fetched data:', {
           experiences,
           iYearsOfExperience,
           skills,
           awards,
           projects,
+          certifications
         });
         
         // Create a new object that matches UserType (UserResource & UserFields)
         // without directly spreading stackUser (which includes methods that cause type issues)
         const userData = {
           // Only take essential properties from stackUser
-          id: stackUser.id,
+          id: stackUser?.id || '',
           // UserFields properties
-          name: stackUser.fullName || '',
-          email: stackUser.emailAddresses[0]?.emailAddress || '',
-          currentPosition: (stackUser.publicMetadata?.currentPosition as string) || '',
-          location: (stackUser.publicMetadata?.location as string) || '',
-          bio: (stackUser.publicMetadata?.bio as string) || '',
-          education: (stackUser.publicMetadata?.education as string) || '',
-          desiredPosition: (stackUser.publicMetadata?.desiredPosition as string) || '',
-          careerGoals: (stackUser.publicMetadata?.careerGoals as string) || '',
-          image: stackUser.imageUrl || '',
+          name: stackUser?.fullName || '',
+          email: stackUser?.emailAddresses[0]?.emailAddress || '',
+          currentPosition: (stackUser?.publicMetadata?.currentPosition as string) || '',
+          location: (stackUser?.publicMetadata?.location as string) || '',
+          bio: (stackUser?.publicMetadata?.bio as string) || '',
+          education: (stackUser?.publicMetadata?.education as string) || '',
+          desiredPosition: (stackUser?.publicMetadata?.desiredPosition as string) || '',
+          careerGoals: (stackUser?.publicMetadata?.careerGoals as string) || '',
+          image: stackUser?.imageUrl || '',
           experiences: experiences,
           yearsOfExperience: iYearsOfExperience,
           skills: skills,
+          certifications: certifications,
+          awards: awards,
+          projects: projects,
+          otherInfo: (stackUser?.publicMetadata?.otherInfo as string) || '',
+          specialRequirements: (stackUser?.publicMetadata?.specialRequirements as string) || '',
         } as UserType;
         
-        setUser(userData);
+        return userData;
       };
-
-      fetchData();
     }
-    console.log('UserProvider initialized with user:', user);
 
-  }, [stackUser]);
-
-  return (
-    <UserContext.Provider value={{ user, setUser }}>
-      {children}
-    </UserContext.Provider>
-  );
-};
-
-export default UserProvider;
+  }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
 interface params {
 
   id: Promise<any>;
@@ -35,27 +36,30 @@ interface Question {
   };
   correct_answer?: string;
   explanation?: string;
+  category?: string;
+  difficulty?: string;
+  points?: number;
 }
 
 interface AssessmentQuestion {
   id: string;
-  points: number;
-  question_order: number;
-  questions: Question;
+  question: Question;
 }
 
 interface Assessment {
   id: string;
   title: string;
   description?: string;
+  type?: string;
+  passingScore?: number;
+  timeLimit?: number; // in minutes
   instructions?: string;
-  time_limit_minutes?: number;
-  passing_score?: number;
-  assessment_questions: AssessmentQuestion[];
+  attempts: number;
+  questions: AssessmentQuestion[];
 }
 
-export default function TakeAssessmentPage({ params }: { params: params }) {
-  let id;
+export default function TakeAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -68,37 +72,34 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   const [showInstructions, setShowInstructions] = useState(true);
-
   useEffect(() => {
-    id = params.id;
-    console.log("Assessment ID:", id);
+    
     const fetchAssessment = async () => {
       try {
-        const assessmentRes = await fetch(`/api/assessments/${params.id}`);
+        const assessmentRes = await fetch(`/api/assessments/${id}`);
         if (!assessmentRes.ok) {
           throw new Error("Assessment not found");
         }
-
         const assessmentData = await assessmentRes.json();
-        const sortedQuestions = assessmentData.assessment_questions.sort((a: { question_order: number; }, b: { question_order: number; }) => a.question_order - b.question_order);
+        console.log("Assessment data fetched:", assessmentData);
+        const sortedQuestions = assessmentData.questions;
         setAssessment({ ...assessmentData, assessment_questions: sortedQuestions });
-
-        if (assessmentData.time_limit_minutes) {
-          setTimeRemaining(assessmentData.time_limit_minutes * 60);
+        if (assessmentData.timeLimit) {
+          setTimeRemaining(assessmentData.timeLimit * 60);
         }
 
         setLoading(false);
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to load assessment",
+          description: `Failed to load assessment ${error}`,
           variant: "destructive",
         });
-        router.push("/assessments");
+        router.push("/dashboard/assessments");
       }
     };
     fetchAssessment();
-  }, [params.id, router, toast]);
+  }, [id, router, toast]);
 
 
   useEffect(() => {
@@ -129,17 +130,17 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [timeRemaining, showInstructions]);
 
-  const startAssessment = () => {
+  const startAssessment = async () => {
     try {
-      const startRes = fetch(`/api/assessments/${params.id}/start`, {
-        method: "POST",
+      const startRes = await fetch(`/api/assessments/${id}`, {
+        method: "GET",
       });
 
       if (!startRes.ok) {
         throw new Error("Failed to start assessment");
       }
 
-      const startData = startRes.json();
+      const startData = await startRes.json();
       setAttemptId(startData.id);
       setShowInstructions(false);
     } catch (error) {
@@ -152,7 +153,10 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
   };
 
   const handleResponseChange = (questionId: string, value: string) => {
-    setResponses((prev) => ({
+console.log("Response changed for question:", questionId, "Value:", value);
+console.log("Current responses:", responses);
+console.log("Previous responses:", responses[questionId]); 
+setResponses((prev) => ({
       ...prev,
       [questionId]: value,
     }));
@@ -165,23 +169,30 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
 
     setSubmitting(true);
     try {
-      const questions = assessment ? assessment.assessment_questions : [];
+      const questions = assessment ? assessment.questions : [];
+      console.log("Submitting assessment with questions:", questions);
+      console.log("User responses:", responses);
       const formattedResponses = questions.map((aq) => {
-        const userResponse = responses[aq.questions.id] || ""; // Fallback to empty string if no response
+        const userResponse = responses[aq.question.id] || ""; // Fallback to empty string if no response
         return {
-          questionId: aq.questions.id,
+          questionId: aq.question.id,
           answer: userResponse,
-          isCorrect: userResponse === aq.questions.correct_answer,
-          pointsEarned: userResponse === aq.questions.correct_answer ? aq.points : 0,
+          isCorrect: userResponse === aq.question.correct_answer,
+          pointsEarned: userResponse === aq.question.correct_answer ? aq.question.points : 0,
         };
       });
-
-      const submitRes = await fetch(`/api/assessments/${params.id}/submit`, {
+console.log("Formatted responses:", formattedResponses);
+      const submitRes = await fetch(`/api/user-assessments/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          assessmentId: assessment.id,
+          score: formattedResponses.reduce((total, response) => total + (response.pointsEarned || 0), 0),
+          status: "completed",
+          attempts: assessment.attempts + 1,
+          startedAt: new Date().toISOString(),
           attemptId,
           responses: formattedResponses,
         }),
@@ -198,7 +209,7 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
         description: `Your score: ${result.score}%`,
       });
 
-      router.push("/assessments");
+      router.push("/dashboard/assessments");
     } catch (error) {
       toast({
         title: "Error",
@@ -213,8 +224,8 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
 
   const getAnsweredCount = () => {
     if (!assessment) return 0;
-    return assessment.assessment_questions.filter(aq =>
-      responses[aq.questions.id] && responses[aq.questions.id].trim() !== ""
+    return assessment.questions.filter(aq =>
+      responses[aq.question.id] && responses[aq.question.id].trim() !== ""
     ).length;
   };
 
@@ -242,7 +253,7 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
             <p className="text-muted-foreground">
               The assessment you&apos;re looking for doesn&apos;t exist or is no longer available.
             </p>
-            <Button className="mt-4" onClick={() => router.push("/assessments")}>
+            <Button className="mt-4" onClick={() => router.push("/dashboard/assessments")}>
               Back to Assessments
             </Button>
           </CardContent>
@@ -273,12 +284,12 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
               <div className="space-y-2">
                 <h4 className="font-medium">Assessment Details</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• {assessment.assessment_questions.length} questions</li>
-                  {assessment.time_limit_minutes && (
-                    <li>• {assessment.time_limit_minutes} minutes time limit</li>
+                  <li>• {assessment?.questions?.length || 0} questions</li>
+                  {assessment?.timeLimit && (
+                    <li>• {assessment.timeLimit} minutes time limit</li>
                   )}
-                  {assessment.passing_score && (
-                    <li>• {assessment.passing_score}% required to pass</li>
+                  {assessment?.passingScore && (
+                    <li>• {assessment.passingScore}% required to pass</li>
                   )}
                 </ul>
               </div>
@@ -289,7 +300,7 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
                   <li>• You can navigate between questions</li>
                   <li>• Your progress is automatically saved</li>
                   <li>• Review your answers before submitting</li>
-                  {assessment.time_limit_minutes && (
+                  {assessment.timeLimit && (
                     <li>• Assessment will auto-submit when time expires</li>
                   )}
                 </ul>
@@ -305,10 +316,10 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
         </Card>
       </div>
     );
-    const questions = assessment?.assessment_questions;
+    const questions = assessment?.questions;
   }
 
-  const questions = assessment.assessment_questions.sort((a, b) => a.question_order - b.question_order);
+  const questions = assessment.questions;
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
   // Converts a time duration in seconds into a formatted string "MM:SS".
@@ -340,10 +351,10 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
               </CardDescription>
               <div className={`flex items-center gap-2 ${getTimeRemainingClass(timeRemaining)}`}>
                 <Clock className="h-4 w-4" />
-                <span className="font-mono">{formatTime(timeRemaining)}</span>
+                <span className="font-mono">{timeRemaining !== null ? formatTime(timeRemaining) : "00:00"}</span>
               </div>
               <Clock className="h-4 w-4" />
-              <span className="font-mono">{formatTime(timeRemaining)}</span>
+              <span className="font-mono">{formatTime(timeRemaining ?? 0)}</span>
             </div>
 
             <div className="text-sm text-muted-foreground">
@@ -366,15 +377,15 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
                 {currentQuestionIndex + 1}
               </span>
               <div className="flex-1">
-                <h3 className="text-lg font-medium mb-4">{currentQuestion.questions.question_text}</h3>
+                <h3 className="text-lg font-medium mb-4">{currentQuestion.question.question_text}</h3>
 
-                {currentQuestion.questions.question_type === "multiple_choice" && (
+                {currentQuestion.question.question_type === "multiple_choice" && (
                   <RadioGroup
-                    value={responses[currentQuestion.questions.id] || ""}
-                    onValueChange={(value) => handleResponseChange(currentQuestion.questions.id, value)}
+                    value={responses[currentQuestion.question.id] || ""}
+                    onValueChange={(value) => handleResponseChange(currentQuestion.question.id, value)}
                   >
                     <div className="space-y-3">
-                      {currentQuestion.questions.options?.choices.map((choice: string, index: number) => (
+                      {currentQuestion.question.options?.choices.map((choice: string, index: number) => (
                         <div key={index} className="flex items-center space-x-2">
                           <RadioGroupItem value={choice} id={`choice-${index}`} />
                           <Label htmlFor={`choice-${index}`} className="flex-1 cursor-pointer">
@@ -386,10 +397,10 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
                   </RadioGroup>
                 )}
 
-                {currentQuestion.questions.question_type === "true_false" && (
+                {currentQuestion.question.question_type === "true_false" && (
                   <RadioGroup
-                    value={responses[currentQuestion.questions.id] || ""}
-                    onValueChange={(value) => handleResponseChange(currentQuestion.questions.id, value)}
+                    value={responses[currentQuestion.question.id] || ""}
+                    onValueChange={(value) => handleResponseChange(currentQuestion.question.id, value)}
                   >
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
@@ -404,13 +415,13 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
                   </RadioGroup>
                 )}
 
-                {(currentQuestion.questions.question_type === "short_answer" ||
-                  currentQuestion.questions.question_type === "essay") && (
+                {(currentQuestion.question.question_type === "short_answer" ||
+                  currentQuestion.question.question_type === "essay") && (
                     <Textarea
-                      value={responses[currentQuestion.questions.id] || ""}
-                      onChange={(e) => handleResponseChange(currentQuestion.questions.id, e.target.value)}
+                      value={responses[currentQuestion.question.id] || ""}
+                      onChange={(e) => handleResponseChange(currentQuestion.question.id, e.target.value)}
                       placeholder="Enter your answer..."
-                      className={currentQuestion.questions.question_type === "essay" ? "min-h-[150px]" : "min-h-[100px]"}
+                      className={currentQuestion.question.question_type === "essay" ? "min-h-[150px]" : "min-h-[100px]"}
                     />
                   )}
               </div>
@@ -447,6 +458,12 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
       </Card>
 
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+            <AlertDialogTitle>Confirm Submission</AlertDialogTitle>
+        <AlertDialogHeader>
+          <AlertDialogDescription>
+            You are about to submit your assessment. Please review your answers before proceeding.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         <AlertDialogContent>
           {getAnsweredCount() < questions.length && (
             <span className="block mt-2 text-amber-600">
@@ -460,9 +477,10 @@ export default function TakeAssessmentPage({ params }: { params: params }) {
           <span className="block mt-2">
             Are you sure you want to submit your assessment? This action cannot be undone.
           </span>
-        </AlertDialogContent>
-        <AlertDialogFooter>
           <AlertDialogCancel>Review Answers</AlertDialogCancel>
+        </AlertDialogContent>
+        
+        <AlertDialogFooter>
           <AlertDialogAction onClick={handleSubmit} disabled={submitting}>
             {submitting ? (
               <div className="flex items-center gap-2">

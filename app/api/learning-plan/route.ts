@@ -4,8 +4,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { UserContext } from "@/contexts/User";
+import { useContext } from "react";
+import ServerUser from "@/lib/server-user";
 
-export const learningPlanSchema = z.object({
+const learningPlanSchema = z.object({
   gapAnalysis: z.string().describe("The topic for which to create a learning plan"),
   actionSteps: z.string().describe("The action steps to be taken in the learning plan"),
   topic: z.string().describe("The topic for which to create a learning plan"),
@@ -46,14 +49,19 @@ function saveLearningPlanToDatabase(userId: string, plan: z.infer<typeof learnin
 }
 
 export async function POST(request: Request) {
-  const user = await auth();
+  //const user = await auth();
+  const user = {
+    userId: "user_2yj8gz88Wv3IJJifbgPUWCZ3FGa", // Replace with actual user ID retrieval logic
+    // Add other user properties if needed
+  }
+  console.log("User:", user);
   if (!user || !user.userId) {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
   }
   const currUserId = user.userId;
-  const body = await request.json();
-  const { userEducation, userExperience, userSkills, userCurrentRole, targetRole, timeCommitment, preferredMethods } = body;
-  const learningPlanPrompt = getLearningPlanPrompt();
+  //const body = await request.json();
+  //const { education, experiences, userSkills, userCurrentRole, targetRole, timeCommitment, preferredMethods } = await request.json();
+  const learningPlanPrompt = await GetLearningPlanPrompt();
 
 
   console.log("Learning Plan Prompt:", learningPlanPrompt);
@@ -109,24 +117,32 @@ export async function POST(request: Request) {
 
 
 
-function getLearningPlanPrompt() {
+async function GetLearningPlanPrompt() {
+  const user = await ServerUser();
+  if (!user || !user.id) {
+    throw new Error("User context is not available or user is not authenticated.");
+  }
+  const { name, email, currentPosition, skills, experiences, education, otherInfo, desiredPosition, specialRequirements } = user;
+  //fields that may not be present
+  const industry = "Tech";
+  const demographics = "Not specified";
   return (
     ` Act as a professional career development coach with expertise in tech industry. I will provide a user's career details and target role. Your task is to create a structured 12-month learning plan and career roadmap to transition them from their current position to their dream role.  
 You are a career development AI assistant. Your task is to help users transition from their current professional position to a desired future position by performing a gap analysis and creating a detailed, phased learning plan.
 
 User Profile:
 
-Current Position: {current_position}
-Skills: {skills}
-Experience: {experience}
-Education: {education}
-Demographics (optional): {demographics}
-Other relevant info: {other_info}
+Current Position: ${currentPosition}
+Skills: ${skills}
+Experience: ${experiences}
+Education: ${education}
+Demographics (optional): ${demographics}
+Other relevant info: ${otherInfo}
 Target Position:
 
-Desired Position: {desired_position}
-Industry/Field: {industry}
-Special Requirements: {special_requirements}
+Desired Position: ${desiredPosition}
+Industry/Field: ${industry}
+Special Requirements: ${specialRequirements}
 Instructions:
 
 Gap Analysis: Identify the key skill, knowledge, and experience gaps between the user's current state and the target position.
@@ -206,96 +222,6 @@ Course Layout
 Module 1: [Title] – [Objective]
 Module 2: [Title] – [Objective]You are a career development AI assistant. Your task is to help users transition from their current professional position to a desired future position by performing a gap analysis and creating a detailed, phased learning plan.
 
-User Profile:
-
-Current Position: {current_position}
-Skills: {skills}
-Experience: {experience}
-Education: {education}
-Demographics (optional): {demographics}
-Other relevant info: {other_info}
-Target Position:
-
-Desired Position: {desired_position}
-Industry/Field: {industry}
-Special Requirements: {special_requirements}
-Instructions:
-
-Gap Analysis: Identify the key skill, knowledge, and experience gaps between the user's current state and the target position.
-Learning Plan: Create a learning plan divided into at least 4 distinct phases. For each phase:
-Write a brief introduction explaining the phase’s focus, what is expected, and what will be delivered at the end.
-Estimate the time required to complete the phase (in weeks).
-List clear, tangible milestones for the phase.
-Recommend at least 3 high-quality PDF resources (with direct links). For each, provide a one-sentence summary of its relevance.
-Recommend at least 3 relevant YouTube videos (with direct links). For each, provide a one-sentence summary of its relevance.
-Design a short quiz (5 questions) to assess understanding at the end of the phase.
-Suggest a practical mini-project or assignment for the phase, with a brief description and expected outcome.
-Capstone Project: At the end of the learning plan, propose a comprehensive capstone project that integrates the skills and knowledge acquired throughout all phases. Include a description, objectives, and expected deliverables.
-Course Layout: At the end, provide a structured course outline (module titles, objectives, and sequence) suitable for a course creation agent.
-Formatting:
-
-Use clear headings for each phase.
-Use bullet points or numbered lists for milestones and resources.
-Provide all links in markdown format.
-Make the plan actionable, realistic, and tailored to the user’s background.
-Example Output Structure:
-
-Gap Analysis
-[Summary of gaps]
-
-Phase 1: [Title]
-Introduction:
-[Brief intro]
-
-Estimated Time:
-[Time in weeks]
-
-Milestones:
-
-[Milestone 1]
-[Milestone 2]
-...
-Resources:
-
-PDFs:
-[Title](PDF link): [One-sentence summary]
-...
-YouTube Videos:
-[Title](YouTube link): [One-sentence summary]
-...
-Quiz:
-
-[Question 1]
-...
-Mini-Project:
-
-Description: [Brief description]
-Expected Outcome: [What the user should produce]
-Phase 2: [Title]
-[Repeat structure above]
-
-Phase 3: [Title]
-[Repeat structure above]
-
-Phase 4: [Title]
-[Repeat structure above]
-
-Capstone Project
-Description:
-[Comprehensive project description]
-
-Objectives:
-
-[Objective 1]
-[Objective 2]
-...
-Expected Deliverables:
-
-[Deliverable 1]
-[Deliverable 2]
-...
-Course Layout
-Module 1: [Title] – [Objective]
-Module 2: [Title] – [Objective]  `
+`
   )
 }

@@ -166,7 +166,7 @@ export default function GenerateAssessmentPage() {
           });
           
           setShowGenerationDialog(false);
-          router.push(`/assessments/manage`);
+          router.push(`/dashboard/assessments/manage`);
         }, 1000);
       } else {
         const error = await response.json();
@@ -223,7 +223,7 @@ export default function GenerateAssessmentPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => router.push("/assessments/manage")}>
+        <Button variant="outline" onClick={() => router.push("/dashboard/assessments/manage")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Assessments
         </Button>

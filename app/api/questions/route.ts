@@ -11,12 +11,12 @@ export async function GET(request: Request) {
      }
  
   try {
-    const questions = await prismaClient.question.findMany({
+    const questions = await prismaClient.questions.findMany({
       where: {
-        createdBy: user.userId
+        created_by: user.userId
       },
       orderBy: {
-        createdAt: 'desc'
+        created_at: 'desc'
       }
     });
 
@@ -48,30 +48,31 @@ export async function POST(request: Request) {
       points
     } = await request.json();
 
-    const question = await prismaClient.question.create({
+    const question = await prismaClient.questions.create({
       data: {
-        questionText,
-        questionType,
+        question_text: questionText,
+        question_type: questionType,
         options,
-        correctAnswer,
+        correct_answer: correctAnswer,
         explanation,
         category,
         difficulty,
         points,
-        createdBy: user.userId
+        created_by: user.userId,
+        updated_at: new Date(),
       },
       select: {
         id: true,
-        questionText: true,
-        questionType: true,   
+        question_text: true,
+        question_type: true,   
         options: true,
-        correctAnswer: true,
+        correct_answer: true,
         explanation: true,
         category: true,
         difficulty: true,
         points: true,
-        createdBy: true,
-        createdAt: true
+        created_by: true,
+        created_at: true
       }
     });
     if (!question) throw new Error('Error creating question');

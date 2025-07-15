@@ -98,28 +98,28 @@ export default function DashboardPage() {
               value="78%"
               description="Overall skill rating"
               icon={<BrainCircuit className="h-5 w-5" />}
-              linkHref="/assessments"
+              linkHref="/dashboard/assessments"
             />
             <StatsCard 
               title="Learning Progress"
               value="65%"
               description="Course completion rate"
               icon={<BookOpen className="h-5 w-5" />}
-              linkHref="/learning"
+              linkHref="/dashboard/learning"
             />
             <StatsCard 
               title="Interview Readiness"
               value="72%"
               description="Based on mock interviews"
               icon={<Video className="h-5 w-5" />}
-              linkHref="/interviews"
+              linkHref="/dashboard/interviews"
             />
             <StatsCard 
               title="Job Applications"
               value="27"
               description="Total applications"
               icon={<Briefcase className="h-5 w-5" />}
-              linkHref="/jobs"
+              linkHref="/dashboard/jobs"
             />
           </div>
 
@@ -263,7 +263,7 @@ export default function DashboardPage() {
               title="Take Assessment"
               description="Evaluate your skills with our comprehensive assessment"
               icon={<BrainCircuit className="h-6 w-6" />}
-              href="/assessments"
+              href="/dashboard/assessments"
             />
             <ActionCard 
               title="Update Resume"

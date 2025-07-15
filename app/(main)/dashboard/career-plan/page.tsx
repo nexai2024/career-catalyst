@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, CheckCircle2, Clock, Target, Trophy } from "lucide-react";
+import GenerateCareerPlanForm from "@/components/CareerPlanForm";
+import Link from "next/link";
 
 type Milestone = {
   id: number;
@@ -102,7 +104,11 @@ export default function CareerPlanPage() {
           Track your progress and achieve your career goals
         </p>
       </div>
-
+      <div className="flex flex-col space-y-2">
+        <p className="text-muted-foreground">
+          <GenerateCareerPlanForm />
+        </p>
+      </div> 
       {/* Overview Cards */}
       <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -113,7 +119,7 @@ export default function CareerPlanPage() {
           <CardContent>
             <div className="text-2xl font-bold">{careerPlan.currentRole}</div>
           </CardContent>
-        </Card>
+        </Card>  m
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Target Role</CardTitle>
@@ -238,6 +244,12 @@ export default function CareerPlanPage() {
               <CardDescription>Tools to help you progress</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
+            <Link href={"/dashboard/career-plan/add-metadata"}>
+            <Button className="w-full" variant="outline">
+                Update User Metadata
+              </Button>
+              </Link>
+
               <Button className="w-full" variant="outline">
                 Schedule Mentor Meeting
               </Button>

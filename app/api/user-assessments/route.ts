@@ -47,3 +47,48 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Error fetching user assessments' }, { status: 500 });
   }
 }
+export async function POST(request: Request) {
+  const user = await auth();
+  if (!user || !user.userId) {
+    return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { assessmentId, score, status, responses, attempts = 0 } = body;
+
+    if (!assessmentId || score === undefined || !status) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const newAssessment = await prisma.userAssessment.create({
+      data: {
+        userId: user.userId,
+        assessmentId,
+        score,
+        attempts,
+        startedAt: new Date(),
+        UserResponses: {
+          create: responses.map((response: any) => ({
+            response: response.answer,
+            is_correct: response.isCorrect,
+            points_earned: response.pointsEarned,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            Questions: {
+              connect: { id: response.questionId },
+            },
+            User: {
+              connect: { id: user.userId },
+            },
+          })),
+        },   
+      },
+    });
+
+    return NextResponse.json(newAssessment);
+  } catch (error) {
+    console.error('Error creating user assessment:', error);
+    return NextResponse.json({ error: 'Error creating user assessment' }, { status: 500 });
+  }
+}

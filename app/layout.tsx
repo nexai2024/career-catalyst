@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import  NavBar from '@/components/navbar';
 import { Suspense } from 'react';
 import UserProvider from '@/contexts/User';
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
   <ClerkProvider waitlistUrl='/waitlist'>
-     
+    
     <html lang="en" suppressHydrationWarning>
       
       <body className={inter.className}><Suspense fallback={<div>=Loading...</div>}>
@@ -47,7 +48,7 @@ export default function RootLayout({
       </body> 
       
     </html>
-   
+ 
     </ClerkProvider>
   );
 }

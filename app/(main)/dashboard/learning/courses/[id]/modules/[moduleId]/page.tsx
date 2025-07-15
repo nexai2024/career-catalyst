@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,11 +47,12 @@ interface ModuleProgress {
   score?: number;
 }
 
-export default function ModulePage({ 
-  params 
-}: { 
-  params: { id: string; moduleId: string } 
-}) {
+export default function ModulePage(
+  props: { 
+    params: Promise<{ id: string; moduleId: string }> 
+  }
+) {
+  const params = use(props.params);
   const router = useRouter();
   const { toast } = useToast();
   const [course, setCourse] = useState<Course | null>(null);
@@ -62,7 +63,7 @@ export default function ModulePage({
   const [isPlaying, setIsPlaying] = useState(false);
   const [notes, setNotes] = useState("");
 
-  
+
 
   useEffect(() => {
     const fetchCourseAndModule = async () => {
