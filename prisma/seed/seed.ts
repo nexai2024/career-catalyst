@@ -13,11 +13,11 @@ const main = async () => {
   //await seed.$resetDatabase();
 
   // Seed the database with 10 wrappers_fdw_stats
-  await seed.wrappers_fdw_stats((x) => x(10));
+  //await seed.wrappers_fdw_stats((x) => x(10));
   //await seed.users((x) => x(10));
-   await seed.questions((x) => x(100));
+   //await seed.questions((x) => x(100));
   // await seed.assessment((x) => x(10));
-   await seed.assessmentQuestion((x) => x(100));
+  // await seed.assessmentQuestion((x) => x(100));
   // await seed.userAssessment((x) => x(10));
   // await seed.careerPlan((x) => x(10));
   // await seed.milestone((x) => x(10));
