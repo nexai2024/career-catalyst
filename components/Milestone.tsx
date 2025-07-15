@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Frame, addPropertyControls, ControlType } from "framer"
 
 type Task = {
     id: string
