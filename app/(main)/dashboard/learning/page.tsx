@@ -194,11 +194,16 @@ export default function LearningPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Learning Hub</h1>
-        <p className="text-muted-foreground">
-          Expand your skills with our comprehensive course library
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Learning Hub</h1>
+          <p className="text-muted-foreground">
+            Expand your skills with our comprehensive course library
+          </p>
+        </div>
+        <Link href="/dashboard/learning-plan">
+          <Button>View Learning Plan</Button>
+        </Link>
       </div>
 
       {/* Quick Stats */}
