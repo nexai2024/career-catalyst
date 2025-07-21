@@ -83,7 +83,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user: stackUser } = useUser();
   const [user, setUser] = useState<UserType>(null);
   const exp = async () => {
-    const experience: Experience[] = await axios.get('/api/user/experience')
+    const experience: Experience[] = await axios.get(`${process.env.APP_URL}/api/user/experience`)
       .then(function (response: any) {
         console.log('Experience data:', response.data);
         return response.data;
@@ -97,7 +97,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return experience;
   }
   const userSkills = async () => {
-    const skills: Skill[] = await axios.get('/api/user/skills')
+    const skills: Skill[] = await axios.get(`${process.env.APP_URL}/api/user/skills`)
       .then(function (response: any) {
         console.log('Skill data:', response.data);
         return response.data;
@@ -111,7 +111,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return skills;
   }
   const userAwards = async () => {
-    const awards: Award[] = await axios.get('/api/user/awards')
+    const awards: Award[] = await axios.get(`${process.env.APP_URL}/api/user/awards`)
       .then(function (response: any) {
         console.log('Award data:', response.data);
         return response.data;
@@ -125,7 +125,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return awards;
   }
   const userProjects = async () => {
-    const projects: Project[] = await axios.get('/api/user/projects')
+    const projects: Project[] = await axios.get(`${process.env.APP_URL}/api/user/projects`)
       .then(function (response: any) {
         console.log('Project data:', response.data);
         return response.data;

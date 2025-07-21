@@ -48,66 +48,107 @@ function saveLearningPlanToDatabase(userId: string, plan: z.infer<typeof learnin
   }
 }
 
-export async function POST(request: Request) {
-  //const user = await auth();
-  const user = {
-    userId: "user_2yj8gz88Wv3IJJifbgPUWCZ3FGa", // Replace with actual user ID retrieval logic
-    // Add other user properties if needed
-  }
-  console.log("User:", user);
-  if (!user || !user.userId) {
+export async function GET(request: Request) {
+  const user = await ServerUser();
+  if (!user || !user.id) {
     return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
   }
-  const currUserId = user.userId;
-  //const body = await request.json();
-  //const { education, experiences, userSkills, userCurrentRole, targetRole, timeCommitment, preferredMethods } = await request.json();
+
+  const existingPlan = await prisma.learningPlan.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (existingPlan) {
+    return NextResponse.json(JSON.parse(existingPlan.content as string));
+  }
+
   const learningPlanPrompt = await GetLearningPlanPrompt();
 
-
-  console.log("Learning Plan Prompt:", learningPlanPrompt);
   let { object: plan } = await generateObject({
-      model: google('gemini-2.5-flash'),
-      system: `You are an expert career development coach specializing in the tech industry. Your task is to create a detailed 12-month learning plan and career roadmap for users transitioning to their dream roles.`,
-      prompt: learningPlanPrompt,
-      schema: z.object({
-        gapAnalysis: z.string().describe("The topic for which to create a learning plan"),
-        actionSteps: z.string().describe("The action steps to be taken in the learning plan"),
-        topic: z.string().describe("The topic for which to create a learning plan"),
-        level: z.enum(["beginner", "intermediate", "advanced"]).describe("The level of the learning plan"),
+    model: google('gemini-2.5-flash'),
+    system: `You are an expert career development coach specializing in the tech industry. Your task is to create a detailed 12-month learning plan and career roadmap for users transitioning to their dream roles.`,
+    prompt: learningPlanPrompt,
+    schema: z.object({
+      gapAnalysis: z.string().describe("The topic for which to create a learning plan"),
+      actionSteps: z.string().describe("The action steps to be taken in the learning plan"),
+      topic: z.string().describe("The topic for which to create a learning plan"),
+      level: z.enum(["beginner", "intermediate", "advanced"]).describe("The level of the learning plan"),
+      quarterlyRoadmap: z.array(z.object({
+        phase1: z.string().describe("Phase 1 (Months 1-3) details"),
+        phaseMilestones: z.array(z.string()).describe("Milestones for each phase"),
+        phasePDFs: z.array(z.string()).describe("Recommended PDF resources for each phase"),
+        phaseYouTubeVideos: z.array(z.string()).describe("Recommended YouTube videos for each phase"),
+        phaseQuiz: z.array(z.string()).describe("Quiz questions for each phase"),
+        phaseMiniProject: z.object({
+          description: z.string().describe("Description of the mini-project for the phase"),
+          expectedOutcome: z.string().describe("Expected outcome of the mini-project"),
+        }),
+      })).describe("Quarterly roadmap with phases and milestones"),
+      capstoneProject: z.string().describe("Capstone project description"),
+      courseLayout: z.array(z.string()).describe("Course outline with module titles and objectives"),
+    }),
+  });
 
-        quarterlyRoadmap: z.array(z.object({
-          phase1: z.string().describe("Phase 1 (Months 1-3) details"),
-          phaseMilestones: z.array(z.string()).describe("Milestones for each phase"),
-          phasePDFs: z.array(z.string()).describe("Recommended PDF resources for each phase"),
-          phaseYouTubeVideos: z.array(z.string()).describe("Recommended YouTube videos for each phase"),
-          phaseQuiz: z.array(z.string()).describe("Quiz questions for each phase"),
-          phaseMiniProject: z.object({
-            description: z.string().describe("Description of the mini-project for the phase"),
-            expectedOutcome: z.string().describe("Expected outcome of the mini-project"),
-          }),
-        })).describe("Quarterly roadmap with phases and milestones"),
+  if (!plan) {
+    return new Response(JSON.stringify({ error: "No learning plan generated" }), { status: 400 });
+  }
 
-        capstoneProject: z.string().describe("Capstone project description"),
-        courseLayout: z.array(z.string()).describe("Course outline with module titles and objectives"),
-      }),
+  const parsedPlan = learningPlanSchema.parse(plan);
+  const rv = await saveLearningPlanToDatabase(user.id, parsedPlan);
 
-    })
-    if (!plan) {
-      return new Response(JSON.stringify({ error: "No learning plan generated" }), { status: 400 });
-    }
+  if (!rv) {
+    console.error("Failed to save learning plan to database.");
+    return new Response(JSON.stringify({ error: "No learning plan saved to database" }), { status: 400 });
+  }
 
-    const parsedPlan = learningPlanSchema.parse(plan);
-    if (!user.userId) {
-      throw new Error("User ID is null or undefined");
-    }
-    const rv = saveLearningPlanToDatabase(currUserId, parsedPlan);
-    if (rv) {
-      console.log("Learning plan saved to database successfully.");
-    } else {
-      console.error("Failed to save learning plan to database.");
-      return new Response(JSON.stringify({ error: "No learning plan saved to database" }), { status: 400 });
-    }
-    
+  return new Response(JSON.stringify(plan), { status: 200, headers: { "Content-Type": "application/json" } });
+}
+
+export async function POST(request: Request) {
+  const user = await ServerUser();
+  if (!user || !user.id) {
+    return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+  }
+
+  const learningPlanPrompt = await GetLearningPlanPrompt();
+
+  let { object: plan } = await generateObject({
+    model: google('gemini-2.5-flash'),
+    system: `You are an expert career development coach specializing in the tech industry. Your task is to create a detailed 12-month learning plan and career roadmap for users transitioning to their dream roles.`,
+    prompt: learningPlanPrompt,
+    schema: z.object({
+      gapAnalysis: z.string().describe("The topic for which to create a learning plan"),
+      actionSteps: z.string().describe("The action steps to be taken in the learning plan"),
+      topic: z.string().describe("The topic for which to create a learning plan"),
+      level: z.enum(["beginner", "intermediate", "advanced"]).describe("The level of the learning plan"),
+      quarterlyRoadmap: z.array(z.object({
+        phase1: z.string().describe("Phase 1 (Months 1-3) details"),
+        phaseMilestones: z.array(z.string()).describe("Milestones for each phase"),
+        phasePDFs: z.array(z.string()).describe("Recommended PDF resources for each phase"),
+        phaseYouTubeVideos: z.array(z.string()).describe("Recommended YouTube videos for each phase"),
+        phaseQuiz: z.array(z.string()).describe("Quiz questions for each phase"),
+        phaseMiniProject: z.object({
+          description: z.string().describe("Description of the mini-project for the phase"),
+          expectedOutcome: z.string().describe("Expected outcome of the mini-project"),
+        }),
+      })).describe("Quarterly roadmap with phases and milestones"),
+      capstoneProject: z.string().describe("Capstone project description"),
+      courseLayout: z.array(z.string()).describe("Course outline with module titles and objectives"),
+    }),
+  });
+
+  if (!plan) {
+    return new Response(JSON.stringify({ error: "No learning plan generated" }), { status: 400 });
+  }
+
+  const parsedPlan = learningPlanSchema.parse(plan);
+  const rv = await saveLearningPlanToDatabase(user.id, parsedPlan);
+
+  if (!rv) {
+    console.error("Failed to save learning plan to database.");
+    return new Response(JSON.stringify({ error: "No learning plan saved to database" }), { status: 400 });
+  }
 
   return new Response(JSON.stringify(plan), { status: 200, headers: { "Content-Type": "application/json" } });
 }

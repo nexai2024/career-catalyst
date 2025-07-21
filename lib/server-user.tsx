@@ -1,5 +1,6 @@
 //import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { UserResource } from '@clerk/types';
 import { useEffect } from 'react';
 const axios = require('axios');
@@ -71,13 +72,13 @@ interface UserFields {
 
 type UserType = Partial<UserResource> & UserFields | null;
 
-export default function ServerUser(): UserType {
-  return null; // Return null as a default value to satisfy the return type
+export default async function ServerUser(): Promise<UserType> {
+  //return null; // Return null as a default value to satisfy the return type
   //const { isSignedIn, user, isLoaded } = useUser()
-  const { user: stackUser } = useUser();
+  const stackUser = await currentUser();
 console.log('Stack User:', stackUser);
   const exp = async () => {
-    const experience: Experience[] = await axios.get('/api/user/experience')
+    const experience: Experience[] = await axios.get(`${process.env.APP_URL}/api/user/experience`)
       .then(function (response: any) {
         console.log('Experience data:', response.data);
         return response.data;
@@ -91,7 +92,7 @@ console.log('Stack User:', stackUser);
     return experience;
   }
   const userSkills = async () => {
-    const skills: Skill[] = await axios.get('/api/user/skills')
+    const skills: Skill[] = await axios.get(`${process.env.APP_URL}/api/user/skills`)
       .then(function (response: any) {
         console.log('Skill data:', response.data);
         return response.data;
@@ -105,7 +106,7 @@ console.log('Stack User:', stackUser);
     return skills;
   }
   const userCertifications = async () => {
-    const certifications: Certification[] = await axios.get('/api/user/certifications')
+    const certifications: Certification[] = await axios.get(`${process.env.APP_URL}/api/user/certifications`)
       .then(function (response: any) {
         console.log('Certificaition data:', response.data);
         return response.data;
@@ -119,7 +120,7 @@ console.log('Stack User:', stackUser);
     return certifications;
   }
   const userAwards = async () => {
-    const awards: Award[] = await axios.get('/api/user/awards')
+    const awards: Award[] = await axios.get(`${process.env.APP_URL}/api/user/awards`)
       .then(function (response: any) {
         console.log('Award data:', response.data);
         return response.data;
@@ -133,7 +134,7 @@ console.log('Stack User:', stackUser);
     return awards;
   }
   const userProjects = async () => {
-    const projects: Project[] = await axios.get('/api/user/projects')
+    const projects: Project[] = await axios.get(`${process.env.APP_URL}/api/user/projects`)
       .then(function (response: any) {
         console.log('Project data:', response.data);
         return response.data;
@@ -194,6 +195,8 @@ console.log('Stack User:', stackUser);
         
         return userData;
       };
+      return await fetchData();
     }
 
+    return null;
   }
