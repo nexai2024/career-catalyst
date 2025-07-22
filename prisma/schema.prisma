@@ -374,6 +374,48 @@ model Award {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Ebook {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  title           String
+  author          String
+  genre           String
+  publicationDate DateTime
+  description     String
+  coverImage      String
+  filePath        String
+  rating          Float
+  availability    String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  reviews         EbookReview[]
+  borrows         EbookBorrow[]
+}
+
+model EbookReview {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  ebookId   String
+  userId    String
+  rating    Int
+  review    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ebook     Ebook    @relation(fields: [ebookId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EbookBorrow {
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  ebookId    String
+  userId     String
+  borrowedAt DateTime
+  dueDate    DateTime
+  returnedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  ebook      Ebook     @relation(fields: [ebookId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Certification {
   id          String   @id @default(dbgenerated("gen_random_uuid()"))
   userId      String
