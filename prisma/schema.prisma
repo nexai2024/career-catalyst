@@ -22,7 +22,9 @@ model User {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   Assessment           Assessment[]
+  awards               Award[]
   careerPlans          CareerPlan[]
+  certifications       Certification[]
   createdCourses       Course[]
   CourseReviews        CourseReviews[]
   documents            Document[]
@@ -32,15 +34,13 @@ model User {
   learningPlans        LearningPlan[]
   learningProgress     LearningProgress[]
   profiles             Profile[]
+  projects             Project[]
   Questions            Questions[]
   skills               Skill[]
   userAssessments      UserAssessment[]
   userCourseEnrollment UserCourseEnrollment[]
   userModuleProgress   UserModuleProgress[]
   userResponses        UserResponses[]
-  awards                Award[]
-  certifications       Certification[]
-  projects            Project[]
 }
 
 model Profile {
@@ -363,8 +363,9 @@ model UserCourseEnrollment {
 
   @@unique([user_id, course_id], map: "user_course_enrollments_user_id_course_id_key")
 }
+
 model Award {
- id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
   userId      String
   title       String
   description String?
@@ -374,8 +375,36 @@ model Award {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Certification {
+  id            String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String
+  name          String
+  organization  String
+  issueDate     DateTime
+  expiryDate    DateTime?
+  credentialUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id            String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime?
+  technologies  String[]
+  repositoryUrl String?
+  liveUrl       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Ebook {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  id              String   @id @default(dbgenerated("gen_random_uuid()"))
   title           String
   author          String
   genre           String
@@ -385,22 +414,8 @@ model Ebook {
   filePath        String
   rating          Float
   availability    String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  reviews         EbookReview[]
-  borrows         EbookBorrow[]
-}
-
-model EbookReview {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  ebookId   String
-  userId    String
-  rating    Int
-  review    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ebook     Ebook    @relation(fields: [ebookId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
 }
 
 model EbookBorrow {
@@ -411,35 +426,15 @@ model EbookBorrow {
   dueDate    DateTime
   returnedAt DateTime?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  ebook      Ebook     @relation(fields: [ebookId], references: [id], onDelete: Cascade)
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt  DateTime
 }
 
-model Certification {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String
-  name        String
-  organization String
-  issueDate   DateTime
-  expiryDate  DateTime?
-  credentialUrl String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Project {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime?
-  technologies String[]
-  repositoryUrl String?
-  liveUrl      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model EbookReview {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  ebookId   String
+  userId    String
+  rating    Int
+  review    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
 }

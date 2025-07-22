@@ -3,9 +3,10 @@
 import { EbookCard } from "@/components/ebook-card";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
+import { Ebook } from "@/lib/types/ebook";
 
 export default function EbooksPage() {
-  const [ebooks, setEbooks] = useState([]);
+  const [ebooks, setEbooks] = useState<{ ebook: Ebook}[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export default function EbooksPage() {
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {ebooks.map((ebook) => (
-          <EbookCard key={ebook.title} {...ebook} />
+          <EbookCard key={ebook.ebook.title} {...ebook.ebook} />
         ))}
       </div>
     </div>

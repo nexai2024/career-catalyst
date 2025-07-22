@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) 
+  {
   // This is where you would typically fetch the ebook from the database.
   // For now, we'll just return a static ebook.
 
