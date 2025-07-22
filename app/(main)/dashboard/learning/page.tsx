@@ -13,12 +13,7 @@ import {
   Star, 
   Trophy, 
   Video, 
-  CheckCircle, 
-  Play,
   Search,
-  Filter,
-  Users,
-  Calendar,
   Award
 } from "lucide-react";
 import {
@@ -31,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "@/hooks/use-query";
 
 interface Course {
   id: string;
@@ -56,54 +52,44 @@ interface EnrolledCourse {
   courses: Course;
 }
 
+const fetchCourses = async (category?: string, level?: string) => {
+  const params = new URLSearchParams();
+  if (category) params.append('category', category);
+  if (level) params.append('level', level);
+  const response = await fetch(`/api/courses?${params}`);
+  if (!response.ok) {
+    throw new Error("Failed to load courses");
+  }
+  return response.json();
+};
+
+const fetchEnrolledCourses = async () => {
+  const response = await fetch("/api/courses?enrolled=true");
+  if (!response.ok) {
+    throw new Error("Failed to load enrolled courses");
+  }
+  return response.json();
+};
+
 export default function LearningPage() {
-  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState<string>("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const params = new URLSearchParams();
-        if (selectedCategory) params.append('category', selectedCategory);
-        if (selectedLevel) params.append('level', selectedLevel);
-  
-        const response = await fetch(`/api/courses?${params}`);
-        if (response.ok) {
-          const data = await response.json();
-          setAvailableCourses(data);
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load courses",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEnrolledCourses();
+  const { data: availableCourses, loading: loadingCourses, refetch: refetchAvailableCourses } = useQuery<Course[]>({
+    queryFn: () => fetchCourses(selectedCategory, selectedLevel),
   });
 
+  const { data: enrolledCourses, loading: loadingEnrolledCourses, refetch: refetchEnrolledCourses } = useQuery<EnrolledCourse[]>({
+    queryFn: fetchEnrolledCourses,
+  });
 
+  const loading = loadingCourses || loadingEnrolledCourses;
 
-  const fetchEnrolledCourses = async () => {
-    try {
-      const response = await fetch("/api/courses?enrolled=true");
-      if (response.ok) {
-        const data = await response.json();
-        setEnrolledCourses(data);
-      }
-    } catch (error) {
-      console.error("Error fetching enrolled courses:", error);
-    }
-  };
+  useEffect(() => {
+    refetchAvailableCourses();
+  }, [selectedCategory, selectedLevel, refetchAvailableCourses]);
 
   const handleEnroll = async (courseId: string) => {
     try {
@@ -116,7 +102,7 @@ export default function LearningPage() {
           title: "Enrolled Successfully",
           description: "You have been enrolled in the course!",
         });
-        fetchEnrolledCourses();
+        refetchEnrolledCourses();
       } else {
         const error = await response.json();
         toast({
@@ -134,12 +120,12 @@ export default function LearningPage() {
     }
   };
 
-  const filteredCourses = availableCourses.filter(course =>
+  const filteredCourses = availableCourses?.filter(course =>
     course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     course.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
-  const categories = Array.from(new Set(availableCourses.map(course => course.category)));
+  const categories = Array.from(new Set(availableCourses?.map(course => course.category) || []));
   const levels = ['beginner', 'intermediate', 'advanced'];
 
   const getStatusColor = (status: string) => {
@@ -214,7 +200,7 @@ export default function LearningPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enrolledCourses.length}</div>
+            <div className="text-2xl font-bold">{enrolledCourses?.length || 0}</div>
             <p className="text-xs text-muted-foreground">Active learning paths</p>
           </CardContent>
         </Card>
@@ -225,7 +211,7 @@ export default function LearningPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {enrolledCourses.filter(c => c.status === 'completed').length}
+              {enrolledCourses?.filter(c => c.status === 'completed').length || 0}
             </div>
             <p className="text-xs text-muted-foreground">Courses finished</p>
           </CardContent>
@@ -237,7 +223,7 @@ export default function LearningPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {enrolledCourses.reduce((total, course) => total + (course.courses.duration_hours || 0), 0)}
+              {enrolledCourses?.reduce((total, course) => total + (course.courses.duration_hours || 0), 0) || 0}
             </div>
             <p className="text-xs text-muted-foreground">Learning time</p>
           </CardContent>
@@ -249,7 +235,7 @@ export default function LearningPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {enrolledCourses.length > 0 
+              {(enrolledCourses && enrolledCourses.length > 0)
                 ? Math.round(enrolledCourses.reduce((total, course) => total + course.progress_percentage, 0) / enrolledCourses.length)
                 : 0}%
             </div>
@@ -265,7 +251,7 @@ export default function LearningPage() {
         </TabsList>
 
         <TabsContent value="my-courses" className="space-y-6">
-          {enrolledCourses.length === 0 ? (
+          {!enrolledCourses || enrolledCourses.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -455,9 +441,9 @@ export default function LearningPage() {
                         <Button 
                           size="sm"
                           onClick={() => handleEnroll(course.id)}
-                          disabled={enrolledCourses.some(e => e.courses.id === course.id)}
+                          disabled={enrolledCourses?.some(e => e.courses.id === course.id)}
                         >
-                          {enrolledCourses.some(e => e.courses.id === course.id) ? 'Enrolled' : 'Enroll'}
+                          {enrolledCourses?.some(e => e.courses.id === course.id) ? 'Enrolled' : 'Enroll'}
                         </Button>
                       </div>
                     </div>

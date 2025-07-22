@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@/hooks/use-query";
 
 interface Assessment {
   id: string;
@@ -193,49 +194,35 @@ function CompletedAssessmentCard({
   );
 }
 
+const fetchAssessments = async () => {
+  const response = await fetch("/api/assessments");
+  if (!response.ok) {
+    throw new Error("Failed to load assessments");
+  }
+  return response.json();
+};
+
+const fetchUserAssessments = async () => {
+  const response = await fetch("/api/user-assessments");
+  if (!response.ok) {
+    throw new Error("Failed to load user assessments");
+  }
+  return response.json();
+};
+
 export default function AssessmentsPage() {
-  const [availableAssessments, setAvailableAssessments] = useState<Assessment[]>([]);
-  const [userAssessments, setUserAssessments] = useState<UserAssessment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [startingAssessment, setStartingAssessment] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchAssessments = async () => {
-      try {
-        const response = await fetch("/api/assessments");
-        if (response.ok) {
-          const data = await response.json();
-          setAvailableAssessments(data);
-        }
-      } catch (error) {
-        console.error("Error fetching assessments:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load assessments",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    const fetchUserAssessments = async () => {
-      try {
-        const response = await fetch("/api/user-assessments");
-        if (response.ok) {
-          const data = await response.json();
-          setUserAssessments(data);
-        }
-      } catch (error) {
-        console.error("Error fetching user assessments:", error);
-      }
-    };
-    fetchAssessments();
-    fetchUserAssessments();
-  }, [toast]);
+  const { data: availableAssessments, loading: loadingAssessments } = useQuery<Assessment[]>({
+    queryFn: fetchAssessments,
+  });
 
+  const { data: userAssessments, loading: loadingUserAssessments } = useQuery<UserAssessment[]>({
+    queryFn: fetchUserAssessments,
+  });
 
+  const loading = loadingAssessments || loadingUserAssessments;
 
   const handleStartAssessment = async (assessmentId: string) => {
     console.log("Starting assessment:", assessmentId);
@@ -318,7 +305,7 @@ export default function AssessmentsPage() {
         </TabsList>
 
         <TabsContent value="available" className="space-y-6">
-          {availableAssessments.length === 0 ? (
+          {!availableAssessments || availableAssessments.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <BrainCircuit className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -343,7 +330,7 @@ export default function AssessmentsPage() {
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-6">
-          {userAssessments.length === 0 ? (
+          {!userAssessments || userAssessments.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

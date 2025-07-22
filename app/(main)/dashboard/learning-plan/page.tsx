@@ -1,18 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@/hooks/use-query";
 import {
   BookOpen,
   Check,
-  ChevronDown,
-  ChevronRight,
   ClipboardList,
   FileText,
   Lightbulb,
@@ -48,10 +46,19 @@ const learningPlanSchema = z.object({
 
 type LearningPlan = z.infer<typeof learningPlanSchema>;
 
+const fetchLearningPlan = async () => {
+  const response = await fetch("/api/learning-plan");
+  if (!response.ok) {
+    throw new Error("Failed to load learning plan");
+  }
+  return response.json();
+};
+
 export default function LearningPlanPage() {
-  const [learningPlan, setLearningPlan] = useState<LearningPlan | null>(null);
-  const [loading, setLoading] = useState(true);
   const [checkedMilestones, setCheckedMilestones] = useState<string[]>([]);
+  const { data: learningPlan, loading, refetch } = useQuery<LearningPlan>({
+    queryFn: fetchLearningPlan,
+  });
 
   const handleMilestoneCheck = (milestone: string) => {
     setCheckedMilestones((prev) =>
@@ -69,35 +76,6 @@ export default function LearningPlanPage() {
   const progress = totalMilestones
     ? Math.round((checkedMilestones.length / totalMilestones) * 100)
     : 0;
-
-  useEffect(() => {
-    const fetchLearningPlan = async () => {
-      try {
-        const response = await fetch("/api/learning-plan");
-        if (response.ok) {
-          const data = await response.json();
-          setLearningPlan(data);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load learning plan",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching learning plan:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load learning plan",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLearningPlan();
-  }, []);
 
   if (loading) {
     return (
@@ -130,7 +108,7 @@ export default function LearningPlanPage() {
         <Button
           onClick={async () => {
             await fetch("/api/learning-plan", { method: "POST" });
-            window.location.reload();
+            refetch();
           }}
           className="mt-4"
         >

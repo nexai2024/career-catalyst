@@ -16,11 +16,9 @@ import {
   FileEdit, 
   Eye, 
   Sparkles,
-  Briefcase,
   User,
   Globe,
   Loader2,
-  ExternalLink
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -39,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useQuery } from "@/hooks/use-query";
 
 interface Document {
   id: string;
@@ -51,9 +50,15 @@ interface Document {
   updated_at: string;
 }
 
+const fetchDocuments = async () => {
+  const response = await fetch("/api/documents");
+  if (!response.ok) {
+    throw new Error("Failed to load documents");
+  }
+  return response.json();
+};
+
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("");
   const [jobDescription, setJobDescription] = useState("");
@@ -62,31 +67,13 @@ export default function DocumentsPage() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  []);
+  const { data: documents, loading, refetch } = useQuery<Document[]>({
+    queryFn: fetchDocuments,
+    onSuccess: (data) => {
+      console.log('Documents loaded:', data);
+    },
+  });
 
- 
-  const fetchDocuments = async () => {
-    try {
-      const response = await fetch("/api/documents");
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(data);
-      }
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load documents",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleGenerateDocument = async () => {
     if (!selectedType) {
       toast({
@@ -138,7 +125,7 @@ export default function DocumentsPage() {
         setSelectedType("");
         setJobDescription("");
         setCompanyName("");
-        fetchDocuments();
+        refetch();
       } else {
         const error = await response.json();
         throw new Error(error.error || "Failed to generate document");
@@ -167,7 +154,7 @@ export default function DocumentsPage() {
           title: "Document Deleted",
           description: "The document has been deleted successfully.",
         });
-        fetchDocuments();
+        refetch();
       } else {
         throw new Error("Failed to delete document");
       }
@@ -239,9 +226,9 @@ export default function DocumentsPage() {
   };
 
   const documentsByType = {
-    resume: documents.filter(doc => doc.type === 'resume'),
-    cover_letter: documents.filter(doc => doc.type === 'cover_letter'),
-    portfolio: documents.filter(doc => doc.type === 'portfolio'),
+    resume: documents?.filter(doc => doc.type === 'resume') || [],
+    cover_letter: documents?.filter(doc => doc.type === 'cover_letter') || [],
+    portfolio: documents?.filter(doc => doc.type === 'portfolio') || [],
   };
 
   if (loading) {
@@ -502,14 +489,14 @@ export default function DocumentsPage() {
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="all">All Documents ({documents.length})</TabsTrigger>
+              <TabsTrigger value="all">All Documents ({documents?.length || 0})</TabsTrigger>
               <TabsTrigger value="resume">Resumes ({documentsByType.resume.length})</TabsTrigger>
               <TabsTrigger value="cover_letter">Cover Letters ({documentsByType.cover_letter.length})</TabsTrigger>
               <TabsTrigger value="portfolio">Portfolios ({documentsByType.portfolio.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="space-y-4">
-              {documents.length === 0 ? (
+              {!documents || documents.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Documents Yet</h3>
