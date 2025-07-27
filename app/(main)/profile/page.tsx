@@ -293,10 +293,13 @@ export default function ProfilePage() {
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="info">Basic Info</TabsTrigger>
               <TabsTrigger value="experience">Experience</TabsTrigger>
               <TabsTrigger value="skills">Skills</TabsTrigger>
+              <Link href="/profile/subscription" passHref>
+                <TabsTrigger value="subscription">Subscription</TabsTrigger>
+              </Link>
             </TabsList>
 
             {/* Basic Info Tab */}
