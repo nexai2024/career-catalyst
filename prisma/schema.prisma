@@ -17,6 +17,7 @@ model User {
   location        String?
   bio             String?
   careerGoals     String?
+  role            String    @default("user")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   Profile         Profile[]
@@ -106,6 +107,14 @@ model FeatureUsage {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, feature])
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Assessment {
