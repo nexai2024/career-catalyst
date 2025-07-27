@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { checkUsage, incrementUsage } from '@/lib/subscription';
 
 // Mock AI service for generating assessments
 async function generateAssessmentWithAI(topic: string, difficulty: string, questionCount: number, options: any) {
@@ -487,6 +488,11 @@ export async function POST(request: Request) {
     const { data: user, error: userError } = await supabase.auth.getUser();
     if (userError) throw userError;
 
+    const { hasAccess, message } = await checkUsage(user.user.id, 'assessment_generation');
+    if (!hasAccess) {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+
     // Generate assessment with AI
     const assessmentData = await generateAssessmentWithAI(topic, difficulty, questionCount, {
       timeLimit,
@@ -555,6 +561,8 @@ export async function POST(request: Request) {
         question_order: i + 1
       });
     }
+
+    await incrementUsage(user.user.id, 'assessment_generation');
 
     return NextResponse.json({
       assessment: {

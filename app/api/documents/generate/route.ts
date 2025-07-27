@@ -7,6 +7,7 @@ import { useContext } from 'react';
 import ServerUser from '@/lib/server-user';
 import { generateText } from "ai"
 import { google } from "@ai-sdk/google"
+import { checkUsage, incrementUsage } from '@/lib/subscription';
 // Mock AI generation functions - in production, these would call actual AI services
 async function GenerateResume(userProfile: any, jobDescription?: string) {
   // Simulate AI processing time
@@ -369,6 +370,11 @@ const user = await auth();
   try {
     const { type, jobDescription, companyName, customizations } = await request.json();
 
+    const { hasAccess, message } = await checkUsage(user.userId, 'document_generation');
+    if (!hasAccess) {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+
     // Get user profile data
     const profile = await prismaClient?.user.findUnique({
       where: { id: user.userId },
@@ -418,7 +424,7 @@ const user = await auth();
       });
     if (!document) throw new Error('Failed to save document');  
 
-
+    await incrementUsage(user.userId, 'document_generation');
 
 
     return NextResponse.json({
