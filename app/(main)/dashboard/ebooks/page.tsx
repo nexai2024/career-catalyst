@@ -8,10 +8,11 @@ import { Ebook } from "@/lib/types/ebook";
 export default function EbooksPage() {
   const [ebooks, setEbooks] = useState<{ ebook: Ebook}[]>([]);
   const [query, setQuery] = useState("");
-
+  console.log("Loading the ebook page")
   useEffect(() => {
     async function searchEbooks() {
-      const response = await fetch(`/api/ebooks/search?query=${query}`);
+      const response = await fetch(`/api/ebooks`);
+      console.log("Fetching ebooks with query:", response);
       const data = await response.json();
       setEbooks(data);
     }

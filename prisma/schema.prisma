@@ -1,440 +1,105 @@
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["relationJoins"]
-}
+Enhanced Course Outline:
+AI Prompt Engineering for Business Productivity: Master ChatGPT & Other Tools
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
+Module 1: The Foundations of Effective Prompting (1 day)
+What is Prompt Engineering? Why it’s the new business superpower.
+Key Principles: Clarity, Conciseness, Context, Constraints, Persona, Format (with real-world business examples).
+Understanding AI Limitations & Biases: How to spot hallucinations, avoid “AI overconfidence,” and keep your outputs trustworthy.
+Overview of Major AI Models: ChatGPT, Gemini, Claude, and how to future-proof your skills for any LLM.
+Mini-Project: Craft a prompt to solve a real business pain point (e.g., “Summarize a competitor’s press release for my team”).
+Module 2: Prompting for Content Creation (2 days)
+Generating Marketing Copy: Headlines, ad text, social posts—plus A/B testing prompts for better results.
+Blog Post Outlines & Drafts: From blank page to publish-ready, including SEO prompt strategies.
+Writing Email Sequences: Cold outreach, nurturing, and customer support—prompt templates for every scenario.
+Developing Video Scripts: From YouTube explainers to internal training videos.
+Iterative Refinement & Tone Adjustment: How to “coach” your AI for brand voice and compliance.
+Project: Create a multi-channel campaign (blog, email, social) for a fictional product launch using only AI prompts.
+Module 3: Prompting for Data Analysis & Insights (2 days)
+Summarizing Long Reports & Documents: Turn 50 pages into 5 bullet points.
+Extracting Key Info from Unstructured Text: Customer reviews, survey responses, support tickets.
+Brainstorming Data Interpretations: Prompting for “what does this mean for us?” insights.
+Generating Simple Code Snippets: Data cleaning, quick analysis in Python/Excel—focus on prompt design, not deep coding.
+Creating Presentation Outlines & Key Takeaways: From raw data to boardroom-ready slides.
+Project: Use AI to analyze a messy dataset (provided), extract insights, and generate a presentation outline.
+Module 4: Prompting for Automation & Workflow Enhancement (1 day)
+AI for Email Drafting & Response Generation: Inbox zero, meet your new AI assistant.
+Automating Meeting Summaries & Action Items: From transcript to actionable next steps.
+Creating FAQs & Knowledge Base Articles: Turn support logs into self-serve help.
+Brainstorming Solutions to Business Problems: Prompting for creative, actionable ideas.
+Ethical Considerations & Best Practices: Privacy, bias, and “when not to use AI.”
+Capstone Project: Design an AI-powered workflow for a real business process (choose from sales, support, HR, or ops).
 
-model User {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()"))
-  authid               String?                @unique
-  email                String                 @unique
-  name                 String?
-  image                String?
-  currentPosition      String?
-  location             String?
-  bio                  String?
-  careerGoals          String?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  Assessment           Assessment[]
-  awards               Award[]
-  careerPlans          CareerPlan[]
-  certifications       Certification[]
-  createdCourses       Course[]
-  CourseReviews        CourseReviews[]
-  documents            Document[]
-  experiences          Experience[]
-  interviews           Interview[]
-  applications         JobApplication[]
-  learningPlans        LearningPlan[]
-  learningProgress     LearningProgress[]
-  profiles             Profile[]
-  projects             Project[]
-  Questions            Questions[]
-  skills               Skill[]
-  userAssessments      UserAssessment[]
-  userCourseEnrollment UserCourseEnrollment[]
-  userModuleProgress   UserModuleProgress[]
-  userResponses        UserResponses[]
-}
 
-model Profile {
-  id               String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId           String
-  title            String
-  company          String?
-  startDate        DateTime
-  endDate          DateTime?
-  description      String?
-  achievements     String?
-  personal_info    Json?
-  education        Json?
-  experience       Json?
-  technical_skills Json?
-  soft_skills      Json?
-  self_assessment  Json?
-  certifications   Json?
-  goals            Json?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  completedAt      DateTime?
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
-model Skill {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  name      String
-  category  String
-  level     Int
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+Absolutely! Here are some ideas for new sections and lessons to enhance your course "AI Prompt Engineering for Business Productivity."
 
-model Assessment {
-  id              String               @id @default("gen_random_uuid ()")
-  title           String
-  description     String?
-  type            String?              @default("default")
-  passingScore    Float?
-  timeLimit       Int?                 @default(60)
-  attempts        Int                  @default(1)
-  completedAt     DateTime?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  endDate         DateTime?
-  isPublished     Boolean?             @default(false)
-  startDate       DateTime?
-  userId          String
-  instructions    String?
-  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questions       AssessmentQuestion[]
-  userAssessments UserAssessment[]
-}
 
-model AssessmentQuestion {
-  id           String     @id @default(dbgenerated("gen_random_uuid()"))
-  assessmentId String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  questionId   String
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  question     Questions  @relation(fields: [questionId], references: [id], onDelete: Cascade)
-}
+### Section 5: "Prompting for Customer Engagement"
 
-model UserAssessment {
-  id            String          @id @default(dbgenerated("gen_random_uuid()"))
-  userId        String
-  assessmentId  String
-  score         Float?
-  attempts      Int             @default(1)
-  startedAt     DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  assessment    Assessment      @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  UserResponses UserResponses[]
-}
+- **Lesson 1: Personalizing Customer Interactions with AI**
 
-model CareerPlan {
-  id          String      @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String
-  title       String
-  description String?
-  targetRole  String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  milestones  Milestone[]
-}
+Explore techniques for tailoring AI prompts to generate personalized responses and recommendations, enhancing customer satisfaction.
 
-model Milestone {
-  id           String     @id @default(dbgenerated("gen_random_uuid()"))
-  careerPlanId String
-  title        String
-  description  String?
-  deadline     DateTime?
-  completed    Boolean    @default(false)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  careerPlan   CareerPlan @relation(fields: [careerPlanId], references: [id], onDelete: Cascade)
-}
+- **Lesson 2: Using AI for Social Media Engagement**
 
-model Course {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()"))
-  title                String
-  description          String?
-  category             String
-  content              String?
-  durationMinutes      Int?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  userId               String
-  modules              String[]
-  user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  CourseModules        CourseModules[]
-  CourseReviews        CourseReviews[]
-  learningProgress     LearningProgress[]
-  UserCourseEnrollment UserCourseEnrollment[]
-}
+Learn how to craft prompts that create engaging social media posts, responding to comments, and managing online communities effectively.
 
-model LearningProgress {
-  id                   String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId               String
-  courseId             String
-  completionPercentage Float     @default(0)
-  lastAccessed         DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  course               Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+- **Lesson 3: Crafting Interactive Chatbot Conversations**
 
-model Interview {
-  id           String              @id @default(dbgenerated("gen_random_uuid()"))
-  userId       String
-  roleTitle    String
-  feedback     String?
-  recordingUrl String?
-  score        Float?
-  completedAt  DateTime?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questions    InterviewQuestion[]
-}
+Design prompts for chatbots that can hold engaging conversations and provide value to customers.
 
-model InterviewQuestion {
-  id          String    @id @default(dbgenerated("gen_random_uuid()"))
-  interviewId String
-  question    String
-  answer      String?
-  feedback    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-}
+- **Lesson 4: Feedback Analysis and Response Generation**
 
-model Document {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String
-  type      String
-  title     String
-  content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+Techniques for using AI to analyze customer feedback and craft thoughtful responses or improvements in products/services.
 
-model Job {
-  id           String           @id @default(dbgenerated("gen_random_uuid()"))
-  title        String
-  company      String
-  location     String?
-  description  String?
-  requirements String?
-  salary       String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  applications JobApplication[]
-}
+- **Lesson 5: Project: Build a Customer Engagement Strategy Using AI Prompts**
 
-model JobApplication {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String
-  jobId       String
-  status      String
-  appliedDate DateTime @default(now())
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+Create a strategy that uses AI-generated prompts for various customer engagement touchpoints.
 
-model Experience {
-  id           String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId       String
-  company      String
-  role         String
-  startDate    DateTime  @db.Date
-  endDate      DateTime? @db.Date
-  description  String?
-  achievements String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  current      Boolean   @default(false)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+### Section 6: "Advanced Prompt Techniques"
 
-model LearningPlan {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String
-  title     String
-  content   Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+- **Lesson 1: Prompt Stacking for Complex Tasks**
 
-model CourseModules {
-  id                 String               @id(map: "course_modules_pkey") @default(dbgenerated("gen_random_uuid()"))
-  course_id          String
-  title              String
-  description        String?
-  content_type       String
-  content_url        String?
-  content_text       String?
-  duration_minutes   Int?
-  module_order       Int
-  is_required        Boolean              @default(true)
-  created_at         DateTime             @default(now())
-  updated_at         DateTime
-  Course             Course               @relation(fields: [course_id], references: [id], onDelete: Cascade, map: "course_modules_course_id_fkey")
-  UserModuleProgress UserModuleProgress[]
-}
+Discover how to create multi-layered prompts that guide AI through complex tasks with various steps.
 
-model CourseReviews {
-  id          String   @id(map: "course_reviews_pkey") @default(dbgenerated("gen_random_uuid()"))
-  user_id     String
-  course_id   String
-  rating      Int
-  review_text String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime
-  Course      Course   @relation(fields: [course_id], references: [id], onDelete: Cascade, map: "course_reviews_course_id_fkey")
-  User        User     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "course_reviews_user_id_fkey")
+- **Lesson 2: Leveraging AI for A/B Testing Prompts**
 
-  @@unique([user_id, course_id], map: "course_reviews_user_id_course_id_key")
-}
+Techniques for using AI to generate different versions of prompts and test them for effectiveness.
 
-model Questions {
-  id                  String               @id(map: "questions_pkey") @default(dbgenerated("gen_random_uuid()"))
-  question_text       String
-  question_type       String
-  options             Json?
-  correct_answer      String?
-  explanation         String?
-  category            String?
-  difficulty          String
-  created_by          String
-  created_at          DateTime             @default(now())
-  updated_at          DateTime
-  points              Int?
-  assessmentQuestions AssessmentQuestion[]
-  User                User                 @relation(fields: [created_by], references: [id], onDelete: Cascade, map: "questions_created_by_fkey")
-  UserResponses       UserResponses[]
-}
+- **Lesson 3: Collaborative Prompting with Teams**
 
-model UserModuleProgress {
-  id                 String        @id(map: "user_module_progress_pkey") @default(dbgenerated("gen_random_uuid()"))
-  user_id            String
-  course_id          String
-  module_id          String
-  started_at         DateTime?
-  completed_at       DateTime?
-  time_spent_minutes Int           @default(0)
-  score              Int?
-  status             String        @default("not_started")
-  created_at         DateTime      @default(now())
-  updated_at         DateTime
-  CourseModules      CourseModules @relation(fields: [module_id], references: [id], onDelete: Cascade, map: "user_module_progress_module_id_fkey")
-  User               User          @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "user_module_progress_user_id_fkey")
+Strategies for involving team members in the prompt engineering process to foster collaboration and creativity.
 
-  @@unique([user_id, module_id], map: "user_module_progress_user_id_module_id_key")
-}
+- **Lesson 4: Incorporating User Feedback into Prompt Design**
 
-model UserResponses {
-  id                 String         @id(map: "user_responses_pkey") @default(dbgenerated("gen_random_uuid()"))
-  userId             String
-  user_assessment_id String
-  question_id        String
-  response           String?
-  is_correct         Boolean?
-  points_earned      Int            @default(0)
-  created_at         DateTime       @default(now())
-  updated_at         DateTime
-  Questions          Questions      @relation(fields: [question_id], references: [id], onDelete: Cascade, map: "user_responses_question_id_fkey")
-  User               User           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "user_responses_userId_fkey")
-  UserAssessment     UserAssessment @relation(fields: [user_assessment_id], references: [id], onDelete: Cascade, map: "user_responses_user_assessment_id_fkey")
-}
+Methods for gathering and implementing user feedback into prompts for continuous improvement.
 
-model UserCourseEnrollment {
-  id                  String    @id(map: "user_course_enrollments_pkey") @default(dbgenerated("gen_random_uuid()"))
-  user_id             String
-  course_id           String
-  enrolled_at         DateTime  @default(now())
-  started_at          DateTime?
-  completed_at        DateTime?
-  progress_percentage Int       @default(0)
-  last_accessed_at    DateTime?
-  status              String    @default("enrolled")
-  created_at          DateTime  @default(now())
-  updated_at          DateTime
-  Course              Course    @relation(fields: [course_id], references: [id], onDelete: Cascade, map: "user_course_enrollments_course_id_fkey")
-  User                User      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "user_course_enrollments_user_id_fkey")
+- **Lesson 5: Project: Design Advanced Prompts for a Fictional Client Scenario**
 
-  @@unique([user_id, course_id], map: "user_course_enrollments_user_id_course_id_key")
-}
+Create a set of advanced prompts for a scenario that requires nuanced and layered responses.
 
-model Award {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId      String
-  title       String
-  description String?
-  date        DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+### Section 7: "Evaluating and Measuring Prompt Effectiveness"
 
-model Certification {
-  id            String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId        String
-  name          String
-  organization  String
-  issueDate     DateTime
-  expiryDate    DateTime?
-  credentialUrl String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+- **Lesson 1: Defining Success Metrics for Prompts**
 
-model Project {
-  id            String    @id @default(dbgenerated("gen_random_uuid()"))
-  userId        String
-  title         String
-  description   String?
-  startDate     DateTime
-  endDate       DateTime?
-  technologies  String[]
-  repositoryUrl String?
-  liveUrl       String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+What metrics should you track to measure the success of your prompts in achieving business goals?
 
-model Ebook {
-  id              String   @id @default(dbgenerated("gen_random_uuid()"))
-  title           String
-  author          String
-  genre           String
-  publicationDate DateTime
-  description     String
-  coverImage      String
-  filePath        String
-  rating          Float
-  availability    String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime
-}
+- **Lesson 2: Analyzing AI-generated Outcomes**
 
-model EbookBorrow {
-  id         String    @id @default(dbgenerated("gen_random_uuid()"))
-  ebookId    String
-  userId     String
-  borrowedAt DateTime
-  dueDate    DateTime
-  returnedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime
-}
+Learn how to assess the quality of AI-generated outputs and refine prompts based on analysis.
 
-model EbookReview {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  ebookId   String
-  userId    String
-  rating    Int
-  review    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-}
+- **Lesson 3: Conducting Prompt Reviews and Iterations**
+
+Strategies for conducting regular reviews of prompts and maintaining an iterative development process.
+
+- **Lesson 4: Case Studies on Successful AI Prompt Implementations**
+
+Analyze real-world examples of businesses that effectively used AI prompts for increased productivity.
+
+- **Lesson 5: Project: Conduct a Comprehensive Review of Your Prompt Usage**
+
+Assess and present findings on the effectiveness of prompts used in a chosen business context.
+
+These new sections and lessons should give your course a comprehensive look at AI prompt engineering, making it even more valuable for your learners! If you have more specific themes in mind, feel free to share.
+
+
