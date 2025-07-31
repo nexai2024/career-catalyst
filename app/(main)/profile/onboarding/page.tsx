@@ -87,7 +87,9 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useContext(UserContext);
-  
+  if (!user) {
+    return <div className="text-center text-muted-foreground">Loading...</div>;
+  }
   // Mock user data
   // const user = {
   //   name: "Alex Johnson",
@@ -185,10 +187,8 @@ export default function ProfilePage() {
         careerGoals: values.careerGoals,
       });
 
-      
-      const data = await response.json();
-      console.log("Profile updated successfully:", data);
-      
+      console.log("Profile updated successfully:", response.data);
+
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated successfully.",
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                   
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-medium text-lg">{exp.role}</h3>
+                          <h3 className="font-medium text-lg">{exp.title}</h3>
                           <p className="text-muted-foreground">{exp.company}</p>
                         </div>
                         <div className="text-right">
@@ -577,7 +577,7 @@ export default function ProfilePage() {
                               <input
                                 type="checkbox"
                                 checked={field.value}
-                                onChange={field.onChange}
+                                onChange={(e) => field.onChange(e.target.checked)}
                                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                               />
                             </FormControl>

@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,267 +7,296 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Briefcase, BookOpen,
   FileText, User, Menu, X, BrainCircuit,
-  Video, LogOut
+  Video, LogOut,
+  Settings,
+  LucideAward
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import UserComponent from "./UserComponent";
 import { useUser } from "@clerk/nextjs";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle, } from "@/components/ui/navigation-menu";
+import { CreditCardIcon, Loader, LucideIcon, SquareCheckIcon, SquareChevronUpIcon, SquarePowerIcon, ToggleRight, } from "lucide-react";
 
-const anonRoutes = [
+const anonComponents: { title: string; href: string; description: string; icon: LucideIcon; }[] = [
   {
-    name: "Features",
-    path: "/",
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    title: "Features",
+    href: "/",
+    description: "Explore the features of our platform.",
+    icon: LayoutDashboard,
   },
   {
-    name: "Pricing",
-    path: "/pricing",
-    icon: <BrainCircuit className="h-5 w-5" />,
+    title: "Pricing",
+    href: "/pricing",
+    description: "View our pricing plans and choose the best one for you.",
+    icon: BrainCircuit,
   },
   {
-    name: "Features",
-    path: "/",
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    title: "Features",
+    href: "/",
+    description: "Explore the features of our platform.",
+    icon: LayoutDashboard,
   },
   {
-    name: "Contact Us",
-    path: "/",
-    icon: <BrainCircuit className="h-5 w-5" />,
+    title: "Contact Us",
+    href: "/",
+    description: "Get in touch with our support team.",
+    icon: BrainCircuit,
   },
 ];
-const routes = [
+const components: { title: string; parent: string; href: string; description: string; icon: LucideIcon; }[] = [
   {
-    name: "Dashboard",
-    path: "/dashboard",
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    title: "Dashboard",
+    parent: "",
+    href: "/dashboard",
+    description: "Your personal dashboard with an overview of your activities.",
+    icon: LayoutDashboard,
+  },
+
+  {
+    title: "Assessments",
+    parent: "Learning",
+    href: "/dashboard/assessments",
+    description: "Take assessments to evaluate your skills and knowledge.",
+    icon: BrainCircuit,
   },
   {
-    name: "Assessments",
-    path: "/dashboard/assessments",
-    icon: <BrainCircuit className="h-5 w-5" />,
+    title: "Career Plan",
+    parent: "Career",
+    href: "/dashboard/career-plan",
+    description: "Create and manage your career plan.",
+    icon: Briefcase,
   },
   {
-    name: "Career Plan",
-    path: "/dashboard/career-plan",
-    icon: <Briefcase className="h-5 w-5" />,
+    title: "Learning Plan",
+    parent: "Learning",
+    href: "/dashboard/learning",
+    description: "Create and manage your learning plan.",
+    icon: BookOpen,
   },
   {
-    name: "Learning",
-    path: "/dashboard/learning",
-    icon: <BookOpen className="h-5 w-5" />,
+    title: "Interview Prep",
+    parent: "Career",
+    href: "/dashboard/interviews",
+    description: "Prepare for interviews with tailored questions and resources.",
+    icon: Video,
   },
   {
-    name: "Interview Prep",
-    path: "/dashboard/interviews",
-    icon: <Video className="h-5 w-5" />,
+    title: "Documents",
+    parent: "Career",
+    href: "/dashboard/documents",
+    description: "Create and manage your career documents like resumes and cover letters.",
+    icon: FileText,
   },
   {
-    name: "Documents",
-    path: "/dashboard/documents",
-    icon: <FileText className="h-5 w-5" />,
+    title: "Jobs",
+    parent: "Career",
+    href: "/dashboard/jobs",
+    description: "Search and apply for jobs that match your skills and interests.",
+    icon: Briefcase,
   },
   {
-    name: "Jobs",
-    path: "/dashboard/jobs",
-    icon: <Briefcase className="h-5 w-5" />,
+    title: "Settings",
+    parent: "Tools",
+    href: "/settings",
+    description: "Manage your account settings and preferences.",
+    icon: Settings,
   },
   {
-    name: "Profile",
-    path: "/profile",
-    icon: <User className="h-5 w-5" />,
+    title: "Subscription",
+    parent: "Account",
+    href: "/profile/subscription",
+    description: "Manage your subscription and view usage.",
+    icon: User,
+  },
+  {
+    title: "Profile",
+    parent: "Account",
+    href: "/profile",
+    description: "Manage your profile and account settings.",
+    icon: User,
   },
 ];
 
-function NavBar() {
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = React.useState(false);
-  //
+
+import * as React from "react";
+
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a"> & { icon: LucideIcon }
+>(({ className, title, children, icon: Icon, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="font-semibold tracking-tight leading-none flex items-center gap-2">
+            <Icon className="h-5 w-5" />
+            {title}
+          </div>
+          <p className="mt-2 line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </a>
+      </NavigationMenuLink>
+    </li>
+  );
+});
+ListItem.displayName = "ListItem";
+
+export default function NavBar() {
   const user = useUser();
-  // Close the mobile menu when a route is clicked
-  const handleRouteClick = () => {
-    setIsOpen(false);
-  };
-
   return (
     <>
       {user.isSignedIn ? (
-        <nav className="border-b bg-background sticky top-0 z-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center space-x-2">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                  <span className="font-bold text-xl text-primary">Career Catalyst</span>
-                </Link>
-              </div>
-
-              {/* Desktop navigation */}
-              <div className="hidden md:block">
-                <div className="flex items-center space-x-6">
-                  {routes.map((route) => (
-                    <Link
-                      key={route.path}
-                      href={route.path}
-                      className={cn(
-                        "flex items-center text-sm font-medium transition-colors hover:text-primary",
-                        pathname === route.path
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {route.name}
+        <div className="border-b bg-background sticky top-0 z-50">
+          <div className="flex items-center justify-between bg-background p-4">
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center space-x-2">
+                <BookOpen className="h-6 w-6 text-primary" />
+                <span className="font-bold text-xl text-primary">Career Catalyst</span>
+              </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <NavigationMenu className="">
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <Link href="/dashboard" legacyBehavior passHref>
+                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                        Dashboard
+                      </NavigationMenuLink>
                     </Link>
-                  ))}
-                  <ThemeToggle />
-                  <UserComponent />
-                </div>
-              </div>
-
-              {/* Mobile navigation */}
-              <div className="md:hidden flex items-center space-x-2">
-                <ThemeToggle />
-                <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-64 sm:w-80">
-                    <div className="flex flex-col space-y-4 py-4">
-                      <div className="flex items-center justify-between px-4">
-                        <Link href="/" className="flex items-center space-x-2" onClick={handleRouteClick}>
-                          <BookOpen className="h-6 w-6 text-primary" />
-                          <span className="font-bold text-xl text-primary">Career Catalyst</span>
-                        </Link>
-                        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                          <X className="h-5 w-5" />
-                          <span className="sr-only">Close menu</span>
-                        </Button>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Learning</NavigationMenuTrigger>
+                    <NavigationMenuContent className="p-4">
+                      <div className="grid grid-cols-3 gap-3 p-4 w-[900px] divide-x">
+                        <div className="col-span-2">
+                          <h6 className="pl-2.5 font-semibold uppercase text-sm text-muted-foreground">
+                            Standard
+                          </h6>
+                          <ul className="mt-2.5 grid grid-cols-2 gap-3">
+                            {components
+                              .filter((component) => component.parent === "Learning")
+                              .map((component) => (
+                                <ListItem
+                                  key={component.title}
+                                  title={component.title}
+                                  href={component.href}
+                                  icon={component.icon}
+                                >
+                                  {component.description}
+                                </ListItem>
+                              ))}
+                          </ul>
+                        </div>
+                        <div className="pl-4">
+                          <h6 className="pl-2.5 font-semibold uppercase text-sm text-muted-foreground">
+                            Premium
+                          </h6>
+                          <ul className="mt-2.5 grid gap-3">
+                            {components
+                              .filter((component) => component.parent === "Learning")
+                              .map((component) => (
+                                <ListItem
+                                  key={component.title}
+                                  title={component.title}
+                                  href={component.href}
+                                  icon={component.icon}
+                                >
+                                  {component.description}
+                                </ListItem>
+                              ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="space-y-1 px-2">
-                        {routes.map((route) => (
-                          <Link
-                            key={route.path}
-                            href={route.path}
-                            onClick={handleRouteClick}
-                            className={cn(
-                              "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                              pathname === route.path
-                                ? "bg-accent text-accent-foreground"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {route.icon}
-                            <span className="ml-3">{route.name}</span>
-                          </Link>
-                        ))}
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Career</NavigationMenuTrigger>
+                    <NavigationMenuContent className="px-4 py-6">
+                      <div className="pl-4">
+                        <h6 className="pl-2.5 font-semibold uppercase text-sm text-muted-foreground">
+                          Solutions
+                        </h6>
+                        <ul className="mt-2.5 grid w-[400px] gap-3 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                          {components
+                            .filter((component) => component.parent === "Career")
+                            .map((component) => (
+                              <ListItem
+                                key={component.title}
+                                title={component.title}
+                                href={component.href}
+                                icon={component.icon}
+                              >
+                                {component.description}
+                              </ListItem>
+                            ))}
+                        </ul>
                       </div>
-                      <UserComponent />
-                      {/* <div className="px-2 mt-4">
-                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </Button>
-                  </div> */}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Tools</NavigationMenuTrigger>
+                    <NavigationMenuContent className="px-4 py-6">
+                      <div className="pl-4">
+                        <h6 className="pl-2.5 font-semibold uppercase text-sm text-muted-foreground">
+                          Tools
+                        </h6>
+                        <ul className="mt-2.5 grid w-[400px] gap-3 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                          {components
+                            .filter((component) => component.parent === "Tools")
+                            .map((component) => (
+                              <ListItem
+                                key={component.title}
+                                title={component.title}
+                                href={component.href}
+                                icon={component.icon}
+                              >
+                                {component.description}
+                              </ListItem>
+                            ))}
+                        </ul>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link href="/admin" legacyBehavior passHref>
+                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                        Admin
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+            <div className="flex items-center space-x-2">
+              <UserComponent />
             </div>
           </div>
-        </nav>
+        </div>
       ) : (
-        <nav className="border-b bg-background sticky top-0 z-50 text-sm">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center space-x-2">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                  <span className="font-bold text-xl text-primary">Career Catalyst</span>
-                </Link>
-              </div>
-
-              {/* Desktop navigation */}
-              <div className="hidden md:block">
-                <div className="flex items-center space-x-6">
-                  {anonRoutes.map((route, index) => (
-                    <Link
-                      key={index}
-                      href={route.path}
-                      className={cn(
-                        "flex items-center text-sm font-medium transition-colors hover:text-primary",
-                        pathname === route.path
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {route.name}
-                    </Link>
-                  ))}
-                  <ThemeToggle />
-                  <UserComponent />
-                </div>
-              </div>
-
-              {/* Mobile navigation */}
-              <div className="md:hidden flex items-center space-x-2">
-                <ThemeToggle />
-                <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-64 sm:w-80">
-                    <div className="flex flex-col space-y-4 py-4">
-                      <div className="flex items-center justify-between px-4">
-                        <Link href="/" className="flex items-center space-x-2" onClick={handleRouteClick}>
-                          <BookOpen className="h-6 w-6 text-primary" />
-                          <span className="font-bold text-xl text-primary">Career Catalyst</span>
-                        </Link>
-                        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                          <X className="h-5 w-5" />
-                          <span className="sr-only">Close menu</span>
-                        </Button>
-                      </div>
-                      <div className="space-y-1 px-2">
-                        {anonRoutes.map((route) => (
-                          <Link
-                            key={route.path}
-                            href={route.path}
-                            onClick={handleRouteClick}
-                            className={cn(
-                              "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                              pathname === route.path
-                                ? "bg-accent text-accent-foreground"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {route.icon}
-                            <span className="ml-3">{route.name}</span>
-                          </Link>
-                        ))}
-                      </div>
-                      <UserComponent />
-                      {/* <div className="px-2 mt-4">
-                                  <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-                                    <LogOut className="h-4 w-4" />
-                                    Sign Out
-                                  </Button>
-                                </div> */}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          </div>
-        </nav>
-      )
-      }
+      <NavigationMenu className="border-b bg-background sticky top-0 z-50">
+        <NavigationMenuList>
+          {anonComponents.map((component) => (
+            <NavigationMenuItem key={component.title}>
+              <Link href={component.href} legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  {component.icon && <component.icon className="mr-2 h-4 w-4" />}
+                  {component.title}
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          ))}
+        </NavigationMenuList>
+      </NavigationMenu>
+      )}
     </>
   );
 }
-export default NavBar;

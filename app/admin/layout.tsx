@@ -1,23 +1,27 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { useContext, useEffect, useState } from "react";
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
+import ServerUser from "@/lib/server-user";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
+  const prismaClient = prisma;
+  const user = await ServerUser();
 
   if (!user) {
     redirect('/');
   }
 
-  const dbUser = await db.user.findUnique({
+  const dbUser = await prismaClient.user.findUnique({
     where: {
-      id: user.id,
+      id: user.id || '',
+    },
+    select: {
+      role: true,
     },
   });
 

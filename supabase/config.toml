@@ -1,3 +1,4 @@
+project_id = "scthohitntmejvztmori"
 [auth.third_party.clerk]
 enabled = true
 domain = "helpful-polliwog-33.clerk.accounts.dev"

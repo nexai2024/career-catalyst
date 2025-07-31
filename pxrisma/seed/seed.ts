@@ -28,7 +28,7 @@ const main = async () => {
   //await seed.userModuleProgress((x) => x(10));
   // await seed.skill((x) => x(10));
   // await seed.experience((x) => x(10));
-  // await seed.profile((x) => x(10));
+  // await seed.profile((x) => x(10));                                                       
 
 
   // Type completion not working? You might want to reload your TypeScript Server to pick up the changes

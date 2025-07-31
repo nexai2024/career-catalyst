@@ -1,8 +1,8 @@
-import { db } from './db';
+import { prisma } from './db';
 import { User } from '@prisma/client';
 
 export const getSubscription = async (userId: string) => {
-  return await db.userSubscription.findUnique({
+  return await prisma.userSubscription.findUnique({
     where: {
       userId,
     },
@@ -13,7 +13,7 @@ export const getSubscription = async (userId: string) => {
 };
 
 export const getFeatureUsage = async (userId: string, feature: string) => {
-  return await db.featureUsage.findUnique({
+  return await prisma.featureUsage.findUnique({
     where: {
       userId_feature: {
         userId,
@@ -47,7 +47,7 @@ export const checkUsage = async (userId: string, feature: string) => {
 export const incrementUsage = async (userId: string, feature: string) => {
   const featureUsage = await getFeatureUsage(userId, feature);
   if (featureUsage) {
-    await db.featureUsage.update({
+    await prisma.featureUsage.update({
       where: {
         id: featureUsage.id,
       },
@@ -56,7 +56,7 @@ export const incrementUsage = async (userId: string, feature: string) => {
       },
     });
   } else {
-    await db.featureUsage.create({
+    await prisma.featureUsage.create({
       data: {
         userId,
         feature,

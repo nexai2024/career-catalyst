@@ -36,21 +36,21 @@ export default function DashboardLayout({
         
         if (!profile) {
           console.error('Profile not found for user:', user.user?.id);
-          router.push('/profile/onboarding');
+          router.push('/profile');
           return;
         }
 console.log('Profile fetched:', profile);
         if (!profile || !profile.completedAt) {
           console.log('Profile not completed for user:', user.user?.id);
         alert('Please complete your profile');
-          router.push('/profile/onboarding');
+          router.push('/profile');
           return;
         }
 
         setProfileCompleted(true);
       } catch (error) {
         console.error('Error checking profile:', error);
-        router.push('/profile/onboarding');
+        router.push('/profile');
       } finally {
         setIsLoading(false);
       }
